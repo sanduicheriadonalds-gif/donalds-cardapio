@@ -153,6 +153,7 @@
     <button class="nav-btn" onclick="abrirAba('pedidos',this)">Pedidos ao vivo</button>
     <button class="nav-btn" onclick="abrirAba('financeiro',this)">Financeiro</button>
     <button class="nav-btn" onclick="abrirAba('qrcodes',this)">QR Codes</button>
+    <button class="nav-btn" onclick="abrirAba('entrada',this)">Entrada de mercadoria</button>
   </div>
   <div class="adm-body">
 
@@ -227,6 +228,29 @@
       <div class="sec-titulo">QR Codes das mesas</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Imprima e cole em cada mesa. O cliente escaneia e abre o cardápio diretamente.</p>
       <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
+    </div>
+
+    <!-- ENTRADA DE MERCADORIA -->
+    <div id="aba-entrada" class="hidden">
+
+      <!-- MARGENS POR CATEGORIA -->
+      <div class="sec-titulo" style="margin-bottom:8px">Margem de lucro por categoria</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Configure a % de lucro desejada. O sistema calcula o preço de venda automaticamente nas entradas.</p>
+      <div id="margens-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:24px"></div>
+
+      <!-- NOVA ENTRADA -->
+      <div class="sec-titulo" style="margin-bottom:14px">
+        Registrar entrada
+        <button class="btn-prim" onclick="abrirModalEntrada()">+ Nova entrada</button>
+      </div>
+
+      <!-- HISTÓRICO -->
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Produto/Ingrediente</th><th>Categoria</th><th>Qtd entrada</th><th>Custo unit.</th><th>Total pago</th><th>Margem</th><th>Preço venda sugerido</th></tr></thead>
+          <tbody id="tabela-entradas"><tr><td colspan="8" class="loading-inline">Carregando entradas...</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
   </div>
@@ -355,6 +379,96 @@
     <div class="modal-footer">
       <button class="btn-sec" onclick="fecharModal('modal-estoque')">Cancelar</button>
       <button class="btn-prim" onclick="salvarEstoque()">Salvar ingrediente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENTRADA -->
+<div class="modal-overlay hidden" id="modal-entrada">
+  <div class="modal">
+    <div class="modal-titulo">ENTRADA DE MERCADORIA</div>
+
+    <div class="campo">
+      <label>Tipo de produto</label>
+      <select id="ent-tipo" onchange="onChangeTipoEntrada()">
+        <option value="ingrediente">Ingrediente do estoque</option>
+        <option value="produto">Produto para revenda (bebida, suco, água...)</option>
+      </select>
+    </div>
+
+    <div id="ent-ingrediente-wrap" class="campo">
+      <label>Ingrediente</label>
+      <select id="ent-ingrediente-sel" onchange="onSelectIngrediente()">
+        <option value="">Selecione...</option>
+      </select>
+    </div>
+
+    <div id="ent-produto-wrap" class="campo hidden">
+      <label>Nome do produto</label>
+      <input type="text" id="ent-produto-nome" placeholder="Ex: Coca-Cola lata 350ml"/>
+    </div>
+
+    <div class="campo">
+      <label>Categoria</label>
+      <select id="ent-categoria" onchange="onChangeCategoriaEntrada()">
+        <option value="sanduiches">Sanduíches</option>
+        <option value="bebidas">Bebidas</option>
+        <option value="sucos">Sucos</option>
+        <option value="agua">Água</option>
+        <option value="cremes">Cremes e molhos</option>
+        <option value="ingredientes">Ingredientes gerais</option>
+        <option value="outros">Outros</option>
+      </select>
+    </div>
+
+    <div class="campo-row">
+      <div class="campo">
+        <label>Qtd comprada <span id="ent-unidade-lbl" style="color:var(--muted);font-weight:400">(un)</span></label>
+        <input type="number" id="ent-qtd" step="0.001" min="0" placeholder="Ex: 10" oninput="calcularEntrada()"/>
+      </div>
+      <div class="campo">
+        <label>Custo unitário (R$)</label>
+        <input type="number" id="ent-custo" step="0.01" min="0" placeholder="Ex: 2,50" oninput="calcularEntrada()"/>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label>Margem de lucro desejada (%)</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <input type="range" id="ent-margem-slider" min="0" max="500" step="5" value="100" oninput="syncMargemInput(this.value)" style="flex:1"/>
+        <input type="number" id="ent-margem-input" min="0" max="999" step="5" value="100" oninput="syncMargemSlider(this.value)" style="width:80px;text-align:center"/>
+        <span style="font-size:13px;color:var(--muted)">%</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="ent-margem-ref"></div>
+    </div>
+
+    <!-- RESULTADO -->
+    <div id="ent-resultado" style="display:none;background:#0d2654;border-radius:12px;padding:16px;margin-top:4px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
+        <div>
+          <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Total pago</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:1px" id="ent-total-pago">R$ 0,00</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Preço de venda</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#f5c518;letter-spacing:1px" id="ent-preco-venda">R$ 0,00</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Lucro unitário</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#4ade80;letter-spacing:1px" id="ent-lucro-unit">R$ 0,00</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);font-size:12px;color:rgba(255,255,255,.6)" id="ent-resumo-txt"></div>
+    </div>
+
+    <div class="campo" style="margin-top:14px">
+      <label>Observação (opcional)</label>
+      <input type="text" id="ent-obs" placeholder="Ex: Fornecedor X, NF 1234..."/>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-entrada')">Cancelar</button>
+      <button class="btn-prim" id="btn-salvar-entrada" onclick="salvarEntrada()">Confirmar entrada</button>
     </div>
   </div>
 </div>
@@ -495,6 +609,7 @@
     if (aba === 'financeiro') carregarFinanceiro();
     if (aba === 'qrcodes') renderQRCodes();
     if (aba === 'dashboard') carregarDashboard();
+    if (aba === 'entrada') { carregarMargens(); carregarEntradas(); }
   };
 
   // DASHBOARD
@@ -880,6 +995,215 @@
   }
 
   window.fecharModal = id => document.getElementById(id).classList.add('hidden');
+
+  // ===================== MARGENS E ENTRADA =====================
+
+  const MARGENS_PADRAO = {
+    sanduiches:   { label: 'Sanduíches',      icon: '🍔', margem: 200 },
+    bebidas:      { label: 'Bebidas',          icon: '🥤', margem: 150 },
+    sucos:        { label: 'Sucos',            icon: '🧃', margem: 180 },
+    agua:         { label: 'Água',             icon: '💧', margem: 200 },
+    cremes:       { label: 'Cremes e molhos',  icon: '🫙', margem: 250 },
+    ingredientes: { label: 'Ingredientes',     icon: '🧅', margem: 0   },
+    outros:       { label: 'Outros',           icon: '📦', margem: 100 },
+  };
+
+  let margensConfig = {...MARGENS_PADRAO};
+
+  async function carregarMargens() {
+    try {
+      const snap = await getDocs(collection(db,'configuracoes'));
+      const d = snap.docs.find(x => x.id === 'margens');
+      if (d) margensConfig = {...MARGENS_PADRAO, ...d.data()};
+    } catch(e) {}
+    renderMargensGrid();
+  }
+
+  function renderMargensGrid() {
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    document.getElementById('margens-grid').innerHTML = Object.entries(margensConfig).map(([key, cat]) => `
+      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:20px">${cat.icon}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--azul)">${cat.label}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="range" min="0" max="500" step="5" value="${cat.margem}"
+            oninput="updateMargem('${key}',this.value)" style="flex:1;height:4px"/>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--azul);min-width:52px;text-align:right"
+            id="margem-val-${key}">${cat.margem}%</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px" id="margem-ex-${key}">
+          ${cat.margem > 0 ? `Custo R$ 10,00 → venda R$ ${(10 * (1 + cat.margem/100)).toFixed(2)}` : 'Sem markup (ingrediente interno)'}
+        </div>
+      </div>`).join('');
+  }
+
+  window.updateMargem = (key, val) => {
+    margensConfig[key].margem = parseInt(val);
+    document.getElementById('margem-val-' + key).textContent = val + '%';
+    const ex = parseInt(val) > 0
+      ? `Custo R$ 10,00 → venda R$ ${(10 * (1 + parseInt(val)/100)).toFixed(2)}`
+      : 'Sem markup (ingrediente interno)';
+    document.getElementById('margem-ex-' + key).textContent = ex;
+    salvarMargens();
+  };
+
+  async function salvarMargens() {
+    try {
+      const snap = await getDocs(collection(db,'configuracoes'));
+      const d = snap.docs.find(x => x.id === 'margens');
+      const dados = {};
+      Object.entries(margensConfig).forEach(([k,v]) => { dados[k] = {label:v.label, icon:v.icon, margem:v.margem}; });
+      if (d) { await updateDoc(doc(db,'configuracoes','margens'), dados); }
+      else { await addDoc(collection(db,'configuracoes'), dados); }
+    } catch(e) {}
+  }
+
+  // ENTRADA
+  window.abrirModalEntrada = async () => {
+    await carregarEstoqueCache();
+    document.getElementById('ent-tipo').value = 'ingrediente';
+    document.getElementById('ent-qtd').value = '';
+    document.getElementById('ent-custo').value = '';
+    document.getElementById('ent-obs').value = '';
+    document.getElementById('ent-resultado').style.display = 'none';
+    onChangeTipoEntrada();
+    // Popula select de ingredientes
+    const sel = document.getElementById('ent-ingrediente-sel');
+    sel.innerHTML = '<option value="">Selecione...</option>' +
+      estoqueCache.sort((a,b)=>a.nome.localeCompare(b.nome))
+        .map(e => `<option value="${e.id}" data-unidade="${e.unidade}" data-custo="${e.custo||0}">${e.nome}</option>`).join('');
+    syncMargemSlider(margensConfig['ingredientes']?.margem || 0);
+    document.getElementById('modal-entrada').classList.remove('hidden');
+  };
+
+  window.onChangeTipoEntrada = () => {
+    const tipo = document.getElementById('ent-tipo').value;
+    document.getElementById('ent-ingrediente-wrap').classList.toggle('hidden', tipo !== 'ingrediente');
+    document.getElementById('ent-produto-wrap').classList.toggle('hidden', tipo !== 'produto');
+    if (tipo === 'produto') {
+      document.getElementById('ent-categoria').value = 'bebidas';
+      onChangeCategoriaEntrada();
+    } else {
+      document.getElementById('ent-categoria').value = 'ingredientes';
+      onChangeCategoriaEntrada();
+    }
+  };
+
+  window.onSelectIngrediente = () => {
+    const sel = document.getElementById('ent-ingrediente-sel');
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt.value) return;
+    document.getElementById('ent-unidade-lbl').textContent = '(' + (opt.dataset.unidade||'un') + ')';
+    if (opt.dataset.custo > 0) document.getElementById('ent-custo').value = opt.dataset.custo;
+    calcularEntrada();
+  };
+
+  window.onChangeCategoriaEntrada = () => {
+    const cat = document.getElementById('ent-categoria').value;
+    const margem = margensConfig[cat]?.margem ?? 100;
+    syncMargemInput(margem);
+    document.getElementById('ent-margem-ref').textContent =
+      `Margem padrão da categoria "${margensConfig[cat]?.label||cat}": ${margem}%`;
+  };
+
+  window.syncMargemInput = val => {
+    document.getElementById('ent-margem-slider').value = val;
+    document.getElementById('ent-margem-input').value = val;
+    calcularEntrada();
+  };
+
+  window.syncMargemSlider = val => {
+    document.getElementById('ent-margem-slider').value = val;
+    document.getElementById('ent-margem-input').value = val;
+    calcularEntrada();
+  };
+
+  window.calcularEntrada = () => {
+    const qtd = parseFloat(document.getElementById('ent-qtd').value) || 0;
+    const custo = parseFloat(document.getElementById('ent-custo').value) || 0;
+    const margem = parseFloat(document.getElementById('ent-margem-input').value) || 0;
+    const res = document.getElementById('ent-resultado');
+    if (custo <= 0) { res.style.display = 'none'; return; }
+    const totalPago = qtd * custo;
+    const precoVenda = custo * (1 + margem / 100);
+    const lucroUnit = precoVenda - custo;
+    const lucroTotal = lucroUnit * qtd;
+    const fmt = v => 'R$ ' + v.toFixed(2).replace('.',',');
+    document.getElementById('ent-total-pago').textContent = fmt(totalPago);
+    document.getElementById('ent-preco-venda').textContent = fmt(precoVenda);
+    document.getElementById('ent-lucro-unit').textContent = fmt(lucroUnit);
+    document.getElementById('ent-resumo-txt').textContent =
+      qtd > 0
+        ? `${qtd} un × ${fmt(custo)} = ${fmt(totalPago)} investido · lucro total estimado: ${fmt(lucroTotal)}`
+        : `Custo ${fmt(custo)} → venda ${fmt(precoVenda)} · lucro ${fmt(lucroUnit)} por unidade`;
+    res.style.display = 'block';
+  };
+
+  window.salvarEntrada = async () => {
+    const btn = document.getElementById('btn-salvar-entrada');
+    btn.textContent = 'Salvando...'; btn.disabled = true;
+    try {
+      const tipo = document.getElementById('ent-tipo').value;
+      const qtd = parseFloat(document.getElementById('ent-qtd').value) || 0;
+      const custo = parseFloat(document.getElementById('ent-custo').value) || 0;
+      const margem = parseFloat(document.getElementById('ent-margem-input').value) || 0;
+      const cat = document.getElementById('ent-categoria').value;
+      const precoVenda = custo * (1 + margem / 100);
+      let nome = '';
+      let ingId = null;
+      if (tipo === 'ingrediente') {
+        const sel = document.getElementById('ent-ingrediente-sel');
+        ingId = sel.value;
+        nome = sel.options[sel.selectedIndex]?.text || '';
+        // Atualiza estoque e custo do ingrediente
+        if (ingId) {
+          const est = estoqueCache.find(e => e.id === ingId);
+          if (est) {
+            await updateDoc(doc(db,'estoque',ingId), {
+              quantidade: (est.quantidade || 0) + qtd,
+              custo: custo,
+            });
+            await carregarEstoqueCache();
+          }
+        }
+      } else {
+        nome = document.getElementById('ent-produto-nome').value;
+      }
+      await addDoc(collection(db,'entradas'), {
+        tipo, nome, categoria: cat, quantidade: qtd,
+        custoUnit: custo, totalPago: qtd * custo,
+        margem, precoVendaSugerido: precoVenda,
+        lucroUnit: precoVenda - custo,
+        observacao: document.getElementById('ent-obs').value,
+        ingredienteId: ingId,
+        criadoEm: serverTimestamp(),
+      });
+      fecharModal('modal-entrada');
+      carregarEntradas();
+    } catch(e) { alert('Erro: ' + e.message); }
+    btn.textContent = 'Confirmar entrada'; btn.disabled = false;
+  };
+
+  async function carregarEntradas() {
+    const snap = await getDocs(collection(db,'entradas'));
+    const entradas = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const fmtDt = ts => ts ? ts.toDate().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '--';
+    document.getElementById('tabela-entradas').innerHTML = entradas.map(e => `
+      <tr>
+        <td style="font-size:12px;color:var(--muted)">${fmtDt(e.criadoEm)}</td>
+        <td><strong>${e.nome}</strong>${e.observacao?`<br><span style="font-size:11px;color:var(--muted)">${e.observacao}</span>`:''}</td>
+        <td><span style="font-size:11px;background:#f0f4ff;color:#1a3a6b;padding:2px 8px;border-radius:10px">${margensConfig[e.categoria]?.label||e.categoria}</span></td>
+        <td>${e.quantidade} un</td>
+        <td>${fmt(e.custoUnit||0)}</td>
+        <td style="font-weight:600">${fmt(e.totalPago||0)}</td>
+        <td><span style="color:var(--azul);font-weight:600">${e.margem||0}%</span></td>
+        <td style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#16a34a;letter-spacing:1px">${fmt(e.precoVendaSugerido||0)}</td>
+      </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">Nenhuma entrada registrada.</td></tr>';
+  }
 </script>
 </body>
 </html>
