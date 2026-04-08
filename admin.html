@@ -154,6 +154,7 @@
     <button class="nav-btn" onclick="abrirAba('financeiro',this)">Financeiro</button>
     <button class="nav-btn" onclick="abrirAba('qrcodes',this)">QR Codes</button>
     <button class="nav-btn" onclick="abrirAba('entrada',this)">Entrada de mercadoria</button>
+    <button class="nav-btn" onclick="abrirAba('boletos',this)">Boletos</button>
   </div>
   <div class="adm-body">
 
@@ -247,10 +248,17 @@
       <!-- HISTÓRICO -->
       <div class="tabela-wrap">
         <table>
-          <thead><tr><th>Data</th><th>Produto/Ingrediente</th><th>Categoria</th><th>Qtd entrada</th><th>Custo unit.</th><th>Total pago</th><th>Margem</th><th>Preço venda sugerido</th></tr></thead>
-          <tbody id="tabela-entradas"><tr><td colspan="8" class="loading-inline">Carregando entradas...</td></tr></tbody>
+          <thead><tr><th>Data</th><th>Produto/Ingrediente</th><th>Categoria</th><th>Qtd entrada</th><th>Custo unit.</th><th>Total pago</th><th>Pagamento</th><th>Margem</th><th>Preço venda sugerido</th></tr></thead>
+          <tbody id="tabela-entradas"><tr><td colspan="9" class="loading-inline">Carregando entradas...</td></tr></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- BOLETOS -->
+    <div id="aba-boletos" class="hidden">
+      <div class="sec-titulo">Boletos em aberto</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Todos os boletos gerados nas entradas, com itens agrupados e situação de pagamento.</p>
+      <div id="boletos-lista" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px"></div>
     </div>
 
   </div>
@@ -462,6 +470,38 @@
     </div>
 
     <div class="campo" style="margin-top:14px">
+      <label>Forma de pagamento</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <button class="pgto-btn ativo" id="pgto-dinheiro" onclick="selecionarPgtoEntrada('dinheiro')">Dinheiro</button>
+        <button class="pgto-btn" id="pgto-cartao" onclick="selecionarPgtoEntrada('cartao')">Cartão</button>
+        <button class="pgto-btn" id="pgto-boleto" onclick="selecionarPgtoEntrada('boleto')">Boleto</button>
+      </div>
+      <input type="hidden" id="ent-pgto" value="dinheiro"/>
+    </div>
+
+    <!-- CAMPO BOLETO -->
+    <div id="ent-boleto-wrap" style="display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:#854d0e;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Dados do boleto</div>
+      <div class="campo-row">
+        <div class="campo">
+          <label>Vencimento</label>
+          <input type="date" id="ent-boleto-venc"/>
+        </div>
+        <div class="campo">
+          <label>Nº do boleto / NF</label>
+          <input type="text" id="ent-boleto-num" placeholder="Ex: NF 00123"/>
+        </div>
+      </div>
+      <div class="campo">
+        <label>Agrupar com boleto existente?</label>
+        <select id="ent-boleto-grupo">
+          <option value="">Novo boleto (este item)</option>
+        </select>
+      </div>
+      <div id="ent-boleto-grupo-info" style="display:none;background:#fff;border-radius:8px;padding:10px 12px;font-size:12px;color:#854d0e;margin-top:6px;border:1px solid #fcd34d"></div>
+    </div>
+
+    <div class="campo">
       <label>Observação (opcional)</label>
       <input type="text" id="ent-obs" placeholder="Ex: Fornecedor X, NF 1234..."/>
     </div>
@@ -618,6 +658,7 @@
     if (aba === 'qrcodes') renderQRCodes();
     if (aba === 'dashboard') carregarDashboard();
     if (aba === 'entrada') { carregarMargens(); carregarEntradas(); }
+    if (aba === 'boletos') carregarBoletos();
   };
 
   // DASHBOARD
@@ -1152,6 +1193,99 @@
     res.style.display = 'block';
   };
 
+  window.selecionarPgtoEntrada = tipo => {
+    document.getElementById('ent-pgto').value = tipo;
+    ['dinheiro','cartao','boleto'].forEach(t => {
+      document.getElementById('pgto-' + t)?.classList.toggle('ativo', t === tipo);
+    });
+    document.getElementById('ent-boleto-wrap').style.display = tipo === 'boleto' ? 'block' : 'none';
+    if (tipo === 'boleto') carregarBoletosAbertos();
+  };
+
+  async function carregarBoletosAbertos() {
+    try {
+      const snap = await getDocs(collection(db,'boletos'));
+      const abertos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(b => b.status !== 'pago');
+      const sel = document.getElementById('ent-boleto-grupo');
+      sel.innerHTML = '<option value="">Novo boleto (somente este item)</option>' +
+        abertos.map(b => {
+          const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+          return `<option value="${b.id}">Boleto ${b.numero||b.id.slice(-4)} · vence ${b.vencimento||'--'} · ${fmt(b.totalAgrupado||0)} · ${b.itens?.length||0} item(s)</option>`;
+        }).join('');
+      sel.onchange = () => {
+        const b = abertos.find(x => x.id === sel.value);
+        const info = document.getElementById('ent-boleto-grupo-info');
+        if (!b) { info.style.display = 'none'; return; }
+        const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+        const itensStr = (b.itens||[]).map(i => `${i.nome} (${fmt(i.totalPago||0)})`).join(', ');
+        info.style.display = 'block';
+        info.innerHTML = `Itens no boleto: <strong>${itensStr}</strong><br>Total atual: <strong>${fmt(b.totalAgrupado||0)}</strong>`;
+      };
+    } catch(e) {}
+  }
+
+  async function salvarBoletoFirebase(entradaId, nome, totalPago, numero, vencimento, grupoId) {
+    if (grupoId) {
+      const snapB = await getDocs(collection(db,'boletos'));
+      const b = snapB.docs.find(d => d.id === grupoId);
+      if (b) {
+        const data = b.data();
+        const novosItens = [...(data.itens||[]), {id:entradaId, nome, totalPago}];
+        const novoTotal = novosItens.reduce((a,i) => a+(i.totalPago||0), 0);
+        await updateDoc(doc(db,'boletos',grupoId), {itens:novosItens, totalAgrupado:novoTotal});
+        return grupoId;
+      }
+    }
+    const ref = await addDoc(collection(db,'boletos'), {
+      numero: numero||'', vencimento: vencimento||'',
+      itens: [{id:entradaId, nome, totalPago}],
+      totalAgrupado: totalPago, status: 'aberto',
+      criadoEm: serverTimestamp(),
+    });
+    return ref.id;
+  }
+
+  async function carregarBoletos() {
+    const snap = await getDocs(collection(db,'boletos'));
+    const boletos = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    document.getElementById('boletos-lista').innerHTML = boletos.length ? boletos.map(b => {
+      const vencDt = b.vencimento ? new Date(b.vencimento+'T00:00:00') : null;
+      const vencido = vencDt && vencDt < hoje && b.status !== 'pago';
+      const dias = vencDt ? Math.ceil((vencDt-hoje)/86400000) : null;
+      const stCor = b.status==='pago'?'#16a34a':vencido?'#dc2626':'#d97706';
+      const stTxt = b.status==='pago'?'✓ Pago':vencido?'Vencido':dias===0?'Vence hoje':dias>0?`Vence em ${dias} dia(s)`:'Em aberto';
+      const itensHtml = (b.itens||[]).map(i =>
+        `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0e8;font-size:13px">
+           <span>${i.nome}</span><span style="color:var(--muted)">${fmt(i.totalPago||0)}</span>
+         </div>`).join('');
+      return `<div style="background:#fff;border:1px solid ${vencido&&b.status!=='pago'?'#fca5a5':b.status==='pago'?'#bbf7d0':var(--border)||'#e8e8e0'};border-radius:var(--radius);overflow:hidden">
+        <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;background:${vencido&&b.status!=='pago'?'#fff5f5':b.status==='pago'?'#f0fdf4':'#fff'}">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--azul);letter-spacing:1px">Boleto ${b.numero||'#'+b.id.slice(-4).toUpperCase()}</div>
+            <div style="font-size:12px;color:var(--muted)">Vencimento: ${b.vencimento||'não informado'} · ${b.itens?.length||0} item(s)</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--azul)">${fmt(b.totalAgrupado||0)}</div>
+            <div style="font-size:13px;font-weight:700;color:${stCor}">${stTxt}</div>
+          </div>
+        </div>
+        <div style="padding:6px 16px 10px">${itensHtml}</div>
+        ${b.status!=='pago'?`<div style="padding:10px 16px;border-top:1px solid var(--border)">
+          <button class="btn-prim" style="padding:8px 18px;font-size:12px" onclick="window._pagarBoleto('${b.id}')">Marcar como pago</button>
+        </div>`:''}
+      </div>`;
+    }).join('') : '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum boleto registrado.</div>';
+  }
+
+  window._pagarBoleto = async id => {
+    if (!confirm('Marcar este boleto como pago?')) return;
+    await updateDoc(doc(db,'boletos',id), {status:'pago'});
+    carregarBoletos();
+  };
+
   window.salvarEntrada = async () => {
     const btn = document.getElementById('btn-salvar-entrada');
     btn.textContent = 'Salvando...'; btn.disabled = true;
@@ -1161,36 +1295,43 @@
       const custo = parseFloat(document.getElementById('ent-custo').value) || 0;
       const margem = parseFloat(document.getElementById('ent-margem-input').value) || 0;
       const cat = document.getElementById('ent-categoria').value;
+      const pgto = document.getElementById('ent-pgto').value;
       const precoVenda = custo * (1 + margem / 100);
       let nome = '';
       let ingId = null;
       if (tipo === 'ingrediente') {
         const sel = document.getElementById('ent-ingrediente-sel');
         ingId = sel.value;
-        nome = sel.options[sel.selectedIndex]?.text || '';
-        // Atualiza estoque e custo do ingrediente
+        nome = sel.options[sel.selectedIndex]?.text?.split(' (em')[0] || '';
         if (ingId) {
           const est = estoqueCache.find(e => e.id === ingId);
           if (est) {
-            await updateDoc(doc(db,'estoque',ingId), {
-              quantidade: (est.quantidade || 0) + qtd,
-              custo: custo,
-            });
+            await updateDoc(doc(db,'estoque',ingId), { quantidade: (est.quantidade||0)+qtd, custo });
             await carregarEstoqueCache();
           }
         }
       } else {
         nome = document.getElementById('ent-produto-nome').value;
       }
-      await addDoc(collection(db,'entradas'), {
+      const totalPago = qtd * custo;
+      const entradaRef = await addDoc(collection(db,'entradas'), {
         tipo, nome, categoria: cat, quantidade: qtd,
-        custoUnit: custo, totalPago: qtd * custo,
+        custoUnit: custo, totalPago,
         margem, precoVendaSugerido: precoVenda,
         lucroUnit: precoVenda - custo,
+        formaPagamento: pgto,
         observacao: document.getElementById('ent-obs').value,
         ingredienteId: ingId,
         criadoEm: serverTimestamp(),
       });
+      // Se boleto, salva/agrupa
+      if (pgto === 'boleto') {
+        const numero = document.getElementById('ent-boleto-num').value;
+        const vencimento = document.getElementById('ent-boleto-venc').value;
+        const grupoId = document.getElementById('ent-boleto-grupo').value;
+        const boletoId = await salvarBoletoFirebase(entradaRef.id, nome, totalPago, numero, vencimento, grupoId);
+        await updateDoc(doc(db,'entradas',entradaRef.id), {boletoId});
+      }
       fecharModal('modal-entrada');
       carregarEntradas();
     } catch(e) { alert('Erro: ' + e.message); }
@@ -1203,6 +1344,7 @@
       .sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
     const fmtDt = ts => ts ? ts.toDate().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '--';
+    const pgtoTag = p => p==='dinheiro'?'<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">Dinheiro</span>':p==='cartao'?'<span style="background:#dbeafe;color:#1e40af;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">Cartão</span>':'<span style="background:#fef9c3;color:#854d0e;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">Boleto</span>';
     document.getElementById('tabela-entradas').innerHTML = entradas.map(e => `
       <tr>
         <td style="font-size:12px;color:var(--muted)">${fmtDt(e.criadoEm)}</td>
@@ -1211,9 +1353,10 @@
         <td>${e.quantidade} un</td>
         <td>${fmt(e.custoUnit||0)}</td>
         <td style="font-weight:600">${fmt(e.totalPago||0)}</td>
+        <td>${pgtoTag(e.formaPagamento||'dinheiro')}</td>
         <td><span style="color:var(--azul);font-weight:600">${e.margem||0}%</span></td>
         <td style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#16a34a;letter-spacing:1px">${fmt(e.precoVendaSugerido||0)}</td>
-      </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">Nenhuma entrada registrada.</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;padding:20px;color:#aaa">Nenhuma entrada registrada.</td></tr>';
   }
 </script>
 </body>
