@@ -131,8 +131,8 @@
     <div class="login-logo">DONALDS'</div>
     <div class="login-sub">PAINEL ADMIN</div>
     <input class="login-input" type="text" id="login-user" placeholder="Usuário"/>
-    <input class="login-input" type="password" id="login-senha" placeholder="Senha" onkeydown="if(event.key==='Enter')fazerLogin()"/>
-    <button class="login-btn" onclick="fazerLogin()">ENTRAR</button>
+    <input class="login-input" type="password" id="login-senha" placeholder="Senha"/>
+    <button class="login-btn" id="btn-login">ENTRAR</button>
     <div class="login-erro" id="login-erro">Usuário ou senha incorretos.</div>
   </div>
 </div>
@@ -143,7 +143,7 @@
     <div class="adm-logo">DONALDS' <span>ADMIN</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="adm-user" id="adm-user-nome">admin</div>
-      <button class="sair-btn" onclick="sair()">Sair</button>
+      <button class="sair-btn" id="btn-sair">Sair</button>
     </div>
   </div>
   <div class="adm-nav">
@@ -615,7 +615,7 @@
     carregarDashboard();
   }
 
-  window.fazerLogin = () => {
+  function fazerLogin() {
     const user = document.getElementById('login-user').value.trim();
     const senha = document.getElementById('login-senha').value;
     if (USUARIOS[user] && USUARIOS[user] === senha) {
@@ -624,12 +624,7 @@
     } else {
       document.getElementById('login-erro').style.display = 'block';
     }
-  };
-
-  window.sair = () => {
-    localStorage.removeItem('donalds_admin_user');
-    location.reload();
-  };
+  }
 
   // Verifica se já estava logado
   const userSalvo = localStorage.getItem('donalds_admin_user');
@@ -637,9 +632,22 @@
     entrarAdmin(userSalvo);
   }
 
-  // Event listeners seguros (evita problema de escopo do type="module")
+  // ===== EVENT LISTENERS CENTRALIZADOS =====
+  // Login
+  const btnLogin = document.getElementById('btn-login');
+  const inputSenha = document.getElementById('login-senha');
+  if (btnLogin) btnLogin.addEventListener('click', fazerLogin);
+  if (inputSenha) inputSenha.addEventListener('keydown', e => { if(e.key==='Enter') fazerLogin(); });
+
+  // Sair
+  document.getElementById('btn-sair')?.addEventListener('click', () => {
+    localStorage.removeItem('donalds_admin_user');
+    location.reload();
+  });
+
+  // Botões principais via delegação
   document.addEventListener('click', e => {
-    const id = e.target.id;
+    const id = e.target.id || e.target.closest('[id]')?.id;
     if (id === 'btn-novo-item') window.abrirModalItem();
     if (id === 'btn-novo-ingrediente') window.abrirModalEstoque();
     if (id === 'btn-nova-entrada') window.abrirModalEntrada();
@@ -1261,8 +1269,10 @@
         `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0e8;font-size:13px">
            <span>${i.nome}</span><span style="color:var(--muted)">${fmt(i.totalPago||0)}</span>
          </div>`).join('');
-      return `<div style="background:#fff;border:1px solid ${vencido&&b.status!=='pago'?'#fca5a5':b.status==='pago'?'#bbf7d0':var(--border)||'#e8e8e0'};border-radius:var(--radius);overflow:hidden">
-        <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;background:${vencido&&b.status!=='pago'?'#fff5f5':b.status==='pago'?'#f0fdf4':'#fff'}">
+      const borderCor = vencido&&b.status!=='pago' ? '#fca5a5' : b.status==='pago' ? '#bbf7d0' : '#e8e8e0';
+      const bgCor = vencido&&b.status!=='pago' ? '#fff5f5' : b.status==='pago' ? '#f0fdf4' : '#fff';
+      return `<div style="background:#fff;border:1px solid ${borderCor};border-radius:12px;overflow:hidden">
+        <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;background:${bgCor}">
           <div>
             <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--azul);letter-spacing:1px">Boleto ${b.numero||'#'+b.id.slice(-4).toUpperCase()}</div>
             <div style="font-size:12px;color:var(--muted)">Vencimento: ${b.vencimento||'não informado'} · ${b.itens?.length||0} item(s)</div>
