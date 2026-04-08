@@ -194,7 +194,7 @@
       </div>
       <div class="tabela-wrap">
         <table>
-          <thead><tr><th>Ingrediente</th><th>Unidade</th><th>Quantidade</th><th>Mínimo</th><th>Status</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Ingrediente</th><th>Estoque</th><th>Uso na receita</th><th>Custo/un</th><th>Mínimo</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="tabela-estoque"><tr><td colspan="6" class="loading-inline">Carregando...</td></tr></tbody>
         </table>
       </div>
@@ -295,25 +295,60 @@
 <!-- MODAL ESTOQUE -->
 <div class="modal-overlay hidden" id="modal-estoque">
   <div class="modal">
-    <div class="modal-titulo">INGREDIENTE</div>
-    <div class="campo"><label>Nome do ingrediente</label><input type="text" id="est-nome" placeholder="Ex: Carne bovina (blend)"/></div>
+    <div class="modal-titulo" id="est-modal-titulo">NOVO INGREDIENTE</div>
+
+    <div class="campo"><label>Nome do ingrediente</label>
+      <input type="text" id="est-nome" placeholder="Ex: Carne bovina blend"/>
+    </div>
+
     <div class="campo-row">
-      <div class="campo"><label>Quantidade atual</label><input type="number" id="est-qtd" step="0.1" placeholder="0"/></div>
-      <div class="campo"><label>Unidade</label>
-        <select id="est-unidade">
-          <option value="kg">kg</option>
-          <option value="g">g</option>
-          <option value="un">unidades</option>
-          <option value="L">litros</option>
-          <option value="ml">ml</option>
+      <div class="campo"><label>Unidade de compra</label>
+        <select id="est-unidade-compra" onchange="syncUnidadeUso()">
+          <option value="kg">kg (quilograma)</option>
+          <option value="L">L (litro)</option>
+          <option value="un">un (unidade)</option>
           <option value="pacote">pacote</option>
+          <option value="cx">caixa</option>
+        </select>
+      </div>
+      <div class="campo"><label>Unidade de uso na receita</label>
+        <select id="est-unidade-uso">
+          <option value="g">g (gramas)</option>
+          <option value="ml">ml (mililitros)</option>
+          <option value="un">un (unidade)</option>
+          <option value="fatia">fatia</option>
+          <option value="folha">folha</option>
+          <option value="colher">colher</option>
         </select>
       </div>
     </div>
-    <div class="campo"><label>Quantidade mínima (alerta)</label><input type="number" id="est-min" step="0.1" placeholder="Ex: 2"/></div>
+
+    <div class="campo-row">
+      <div class="campo"><label>Qtd em estoque <span id="est-unidade-label" style="color:var(--muted);font-weight:400">(kg)</span></label>
+        <input type="number" id="est-qtd" step="0.001" min="0" placeholder="Ex: 5"/>
+      </div>
+      <div class="campo"><label>Qtd mínima para alerta <span style="color:var(--muted);font-weight:400" id="est-min-label">(kg)</span></label>
+        <input type="number" id="est-min" step="0.001" min="0" placeholder="Ex: 1"/>
+      </div>
+    </div>
+
+    <div class="campo-row">
+      <div class="campo"><label>Custo por unidade de compra (R$)</label>
+        <input type="number" id="est-custo" step="0.01" min="0" placeholder="Ex: 32,00 por kg"/>
+      </div>
+      <div class="campo"><label>Fator de conversão</label>
+        <input type="number" id="est-fator" step="1" min="1" placeholder="Ex: 1000 (1kg = 1000g)" readonly style="background:#f8f8f8;color:var(--muted)"/>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:12px">
+      O fator de conversão é calculado automaticamente (ex: 1 kg = 1000 g).
+    </div>
+
+    <div id="est-custo-info" style="display:none;background:#f0f7ff;border-radius:8px;padding:10px 12px;font-size:12px;color:#1a56a0;margin-bottom:12px"></div>
+
     <div class="modal-footer">
       <button class="btn-sec" onclick="fecharModal('modal-estoque')">Cancelar</button>
-      <button class="btn-prim" onclick="salvarEstoque()">Salvar</button>
+      <button class="btn-prim" onclick="salvarEstoque()">Salvar ingrediente</button>
     </div>
   </div>
 </div>
@@ -363,16 +398,15 @@
         <div class="receita-item">
           <span class="receita-item-nome">${it.nome}</span>
           <input class="receita-item-qtd" type="number" step="0.1" min="0" value="${it.quantidade}" onchange="window._updateQtdReceita(${i}, this.value)" placeholder="Qtd"/>
-          <span class="receita-item-unid">${it.unidade}</span>
+          <span class="receita-item-unid">${it.unidadeUso || it.unidade}</span>
           <button class="receita-item-del" onclick="window._removerReceita(${i})">×</button>
         </div>`).join('');
     }
-    // Atualiza select removendo já adicionados
     const sel = document.getElementById('receita-select');
     const jaAdicionados = receitaAtual.map(x => x.id);
     sel.innerHTML = '<option value="">Selecione um ingrediente...</option>' +
       estoqueCache.filter(e => !jaAdicionados.includes(e.id))
-        .map(e => `<option value="${e.id}">${e.nome} (${e.unidade})</option>`).join('');
+        .map(e => `<option value="${e.id}">${e.nome} (em ${e.unidadeUso || e.unidade})</option>`).join('');
   }
 
   window.adicionarIngrediente = () => {
@@ -381,7 +415,7 @@
     if (!id) return;
     const ing = estoqueCache.find(e => e.id === id);
     if (!ing) return;
-    receitaAtual.push({id: ing.id, nome: ing.nome, quantidade: 1, unidade: ing.unidade});
+    receitaAtual.push({id: ing.id, nome: ing.nome, quantidade: 1, unidade: ing.unidade, unidadeUso: ing.unidadeUso || ing.unidade, fator: ing.fator || 1});
     renderReceita();
   };
 
@@ -403,7 +437,10 @@
         for (const ing of cardItem.receita) {
           const est = estoqueMap[ing.id];
           if (!est) continue;
-          const novaQtd = Math.max(0, (est.quantidade || 0) - (ing.quantidade * itemPedido.quantidade));
+          // Converte quantidade usada (em unidadeUso) para unidade de estoque (unidade compra)
+          const fator = est.fator || 1;
+          const qtdUsadaEmCompra = (ing.quantidade * itemPedido.quantidade) / fator;
+          const novaQtd = Math.max(0, (est.quantidade || 0) - qtdUsadaEmCompra);
           await updateDoc(est.ref, { quantidade: novaQtd });
         }
       }
@@ -458,8 +495,8 @@
   async function carregarDashboard() {
     try {
       const hoje = new Date(); hoje.setHours(0,0,0,0);
-      const snap = await getDocs(query(collection(db,'pedidos'), orderBy('criadoEm','desc')));
-      const todos = snap.docs.map(d => ({id:d.id,...d.data()}));
+      const snap = await getDocs(collection(db,'pedidos'));
+      const todos = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
       const pedidosHoje = todos.filter(p => p.criadoEm && p.criadoEm.toDate() >= hoje);
       const totalHoje = pedidosHoje.reduce((a,p) => a + (p.total||0), 0);
       const ticket = pedidosHoje.length ? totalHoje / pedidosHoje.length : 0;
@@ -479,25 +516,27 @@
 
   // CARDÁPIO
   async function carregarCardapio() {
-    const snap = await getDocs(query(collection(db,'cardapio'), orderBy('ordem')));
-    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
-    const badgeTag = b => b==='hot'?'<span class="tag tag-hot">quente</span>':b==='new'?'<span class="tag tag-new">novo</span>':b==='dest'?'<span class="tag tag-dest">destaque</span>':'—';
-    document.getElementById('tabela-cardapio').innerHTML = snap.docs.map(d => {
-      const it = {id:d.id,...d.data()};
-      const img = it.foto ? `<img src="${it.foto}" style="width:48px;height:48px;border-radius:8px;object-fit:cover"/>` : `<div style="width:48px;height:48px;border-radius:8px;background:#0d2654;display:flex;align-items:center;justify-content:center;font-size:22px">${it.emoji||'🍔'}</div>`;
-      return `<tr>
-        <td>${img}</td>
-        <td><strong>${it.nome}</strong></td>
-        <td>${it.categoria}</td>
-        <td>${fmt(it.preco)}</td>
-        <td><span class="tag ${it.ativo!==false?'tag-ativo':'tag-inativo'}">${it.ativo!==false?'Ativo':'Inativo'}</span></td>
-        <td>${badgeTag(it.badge)}</td>
-        <td><div style="display:flex;gap:6px">
-          <button class="btn-sec" onclick="window._editarItem('${it.id}')">Editar</button>
-          <button class="btn-danger" onclick="window._deletarItem('${it.id}')">Excluir</button>
-        </div></td>
-      </tr>`;
-    }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">Nenhum item cadastrado.</td></tr>';
+    try {
+      const snap = await getDocs(collection(db,'cardapio'));
+      const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+      const badgeTag = b => b==='hot'?'<span class="tag tag-hot">quente</span>':b==='new'?'<span class="tag tag-new">novo</span>':b==='dest'?'<span class="tag tag-dest">destaque</span>':'—';
+      const itens = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b)=>(a.ordem||99)-(b.ordem||99));
+      document.getElementById('tabela-cardapio').innerHTML = itens.map(it => {
+        const img = it.foto ? `<img src="${it.foto}" style="width:48px;height:48px;border-radius:8px;object-fit:cover"/>` : `<div style="width:48px;height:48px;border-radius:8px;background:#0d2654;display:flex;align-items:center;justify-content:center;font-size:22px">${it.emoji||'🍔'}</div>`;
+        return `<tr>
+          <td>${img}</td>
+          <td><strong>${it.nome}</strong></td>
+          <td>${it.categoria}</td>
+          <td>${fmt(it.preco)}</td>
+          <td><span class="tag ${it.ativo!==false?'tag-ativo':'tag-inativo'}">${it.ativo!==false?'Ativo':'Inativo'}</span></td>
+          <td>${badgeTag(it.badge)}</td>
+          <td><div style="display:flex;gap:6px">
+            <button class="btn-sec" onclick="window._editarItem('${it.id}')">Editar</button>
+            <button class="btn-danger" onclick="window._deletarItem('${it.id}')">Excluir</button>
+          </div></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">Nenhum item cadastrado.</td></tr>';
+    } catch(e) { console.error('Erro cardápio:', e); }
   }
 
   window.abrirModalItem = async () => {
@@ -588,49 +627,149 @@
     btn.textContent = 'Salvar item'; btn.disabled = false;
   };
 
+  // Fatores de conversão: unidade_compra → unidade_uso
+  const FATORES = {
+    'kg': {'g': 1000, 'kg': 1},
+    'L':  {'ml': 1000, 'L': 1},
+    'un': {'un': 1, 'fatia': 1, 'folha': 1, 'colher': 1},
+    'pacote': {'un': 1, 'pacote': 1},
+    'cx': {'un': 1, 'cx': 1},
+  };
+
+  window.syncUnidadeUso = () => {
+    const compra = document.getElementById('est-unidade-compra').value;
+    const usoSel = document.getElementById('est-unidade-uso');
+    const fatorInput = document.getElementById('est-fator');
+    const lbl = document.getElementById('est-unidade-label');
+    const lblMin = document.getElementById('est-min-label');
+    lbl.textContent = '(' + compra + ')';
+    lblMin.textContent = '(' + compra + ')';
+    const opcoes = FATORES[compra] || {'un':1};
+    usoSel.innerHTML = Object.keys(opcoes).map(u => `<option value="${u}">${u}</option>`).join('');
+    fatorInput.value = Object.values(opcoes)[0];
+    atualizarCustoInfo();
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('est-unidade-uso')?.addEventListener('change', () => {
+      const compra = document.getElementById('est-unidade-compra').value;
+      const uso = document.getElementById('est-unidade-uso').value;
+      const fator = (FATORES[compra]||{})[uso] || 1;
+      document.getElementById('est-fator').value = fator;
+      atualizarCustoInfo();
+    });
+    document.getElementById('est-custo')?.addEventListener('input', atualizarCustoInfo);
+  });
+
+  function atualizarCustoInfo() {
+    const custo = parseFloat(document.getElementById('est-custo')?.value) || 0;
+    const compra = document.getElementById('est-unidade-compra')?.value || 'kg';
+    const uso = document.getElementById('est-unidade-uso')?.value || 'g';
+    const fator = parseFloat(document.getElementById('est-fator')?.value) || 1;
+    const info = document.getElementById('est-custo-info');
+    if (!info) return;
+    if (custo > 0 && fator > 1) {
+      const custoUso = custo / fator;
+      info.style.display = 'block';
+      info.textContent = `Custo por ${uso}: R$ ${custoUso.toFixed(4)} — ex: 180g = R$ ${(custoUso * 180).toFixed(2)}`;
+    } else {
+      info.style.display = 'none';
+    }
+  }
+
   // ESTOQUE
   async function carregarEstoque() {
     const snap = await getDocs(collection(db,'estoque'));
-    document.getElementById('tabela-estoque').innerHTML = snap.docs.map(d => {
-      const it = {id:d.id,...d.data()};
+    const itens = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => a.nome?.localeCompare(b.nome));
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    document.getElementById('tabela-estoque').innerHTML = itens.map(it => {
       const pct = it.minimo > 0 ? it.quantidade / it.minimo : 99;
-      const st = pct <= 0 ? '<span class="estoque-critico">Zerado</span>' : pct < 1 ? '<span class="estoque-critico">Crítico</span>' : pct < 2 ? '<span class="estoque-baixo">Baixo</span>' : '<span class="estoque-ok">OK</span>';
+      const st = pct <= 0
+        ? '<span class="estoque-critico">Zerado</span>'
+        : pct < 1 ? '<span class="estoque-critico">Crítico</span>'
+        : pct < 2 ? '<span class="estoque-baixo">Baixo</span>'
+        : '<span class="estoque-ok">OK</span>';
+      const fator = it.fator || 1;
+      const qtdUso = it.quantidade * fator;
+      const custoUso = it.custo > 0 && fator > 1 ? 'R$ ' + (it.custo/fator).toFixed(4) + '/' + (it.unidadeUso||it.unidade) : '—';
       return `<tr>
         <td><strong>${it.nome}</strong></td>
-        <td>${it.unidade}</td>
-        <td>${Number(it.quantidade).toFixed(1)}</td>
-        <td>${Number(it.minimo).toFixed(1)}</td>
+        <td>${Number(it.quantidade).toFixed(3)} ${it.unidade||''}</td>
+        <td style="color:var(--muted);font-size:12px">${qtdUso.toFixed(0)} ${it.unidadeUso||it.unidade} disponíveis</td>
+        <td style="font-size:12px">${it.custo > 0 ? fmt(it.custo) + '/' + (it.unidade||'') : '—'}<br><span style="color:var(--muted)">${custoUso}</span></td>
+        <td>${Number(it.minimo).toFixed(3)} ${it.unidade||''}</td>
         <td>${st}</td>
         <td><div style="display:flex;gap:6px">
-          <button class="btn-sec" onclick="window._ajustarEstoque('${it.id}','${it.nome}',${it.quantidade})">Ajustar</button>
+          <button class="btn-sec" onclick="window._editarEstoque('${it.id}')">Editar</button>
+          <button class="btn-sec" style="border-color:var(--success);color:var(--success)" onclick="window._ajustarEstoque('${it.id}','${it.nome}',${it.quantidade},'${it.unidade}')">+ Entrada</button>
           <button class="btn-danger" onclick="window._deletarEstoque('${it.id}')">Excluir</button>
         </div></td>
       </tr>`;
-    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">Nenhum ingrediente cadastrado.</td></tr>';
+    }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">Nenhum ingrediente cadastrado.</td></tr>';
   }
 
+  let estEditandoId = null;
+
   window.abrirModalEstoque = () => {
+    estEditandoId = null;
+    document.getElementById('est-modal-titulo').textContent = 'NOVO INGREDIENTE';
     document.getElementById('est-nome').value = '';
     document.getElementById('est-qtd').value = '';
     document.getElementById('est-min').value = '';
+    document.getElementById('est-custo').value = '';
+    document.getElementById('est-unidade-compra').value = 'kg';
+    syncUnidadeUso();
+    document.getElementById('modal-estoque').classList.remove('hidden');
+  };
+
+  window._editarEstoque = async id => {
+    const snap = await getDocs(collection(db,'estoque'));
+    const d = snap.docs.find(x => x.id === id);
+    if (!d) return;
+    const it = d.data();
+    estEditandoId = id;
+    document.getElementById('est-modal-titulo').textContent = 'EDITAR INGREDIENTE';
+    document.getElementById('est-nome').value = it.nome || '';
+    document.getElementById('est-qtd').value = it.quantidade || '';
+    document.getElementById('est-min').value = it.minimo || '';
+    document.getElementById('est-custo').value = it.custo || '';
+    document.getElementById('est-unidade-compra').value = it.unidade || 'kg';
+    syncUnidadeUso();
+    document.getElementById('est-unidade-uso').value = it.unidadeUso || 'g';
+    const fator = (FATORES[it.unidade]||{})[it.unidadeUso||'g'] || it.fator || 1;
+    document.getElementById('est-fator').value = fator;
+    atualizarCustoInfo();
     document.getElementById('modal-estoque').classList.remove('hidden');
   };
 
   window.salvarEstoque = async () => {
-    await addDoc(collection(db,'estoque'), {
+    const unidade = document.getElementById('est-unidade-compra').value;
+    const unidadeUso = document.getElementById('est-unidade-uso').value;
+    const fator = parseFloat(document.getElementById('est-fator').value) || 1;
+    const dados = {
       nome: document.getElementById('est-nome').value,
       quantidade: parseFloat(document.getElementById('est-qtd').value) || 0,
       minimo: parseFloat(document.getElementById('est-min').value) || 0,
-      unidade: document.getElementById('est-unidade').value,
-    });
+      custo: parseFloat(document.getElementById('est-custo').value) || 0,
+      unidade,
+      unidadeUso,
+      fator,
+    };
+    if (estEditandoId) {
+      await updateDoc(doc(db,'estoque',estEditandoId), dados);
+    } else {
+      await addDoc(collection(db,'estoque'), dados);
+    }
     fecharModal('modal-estoque');
     carregarEstoque();
+    await carregarEstoqueCache();
   };
 
-  window._ajustarEstoque = async (id, nome, atual) => {
-    const nova = prompt(`Quantidade atual de "${nome}": ${atual}\nDigite a nova quantidade:`, atual);
-    if (nova === null) return;
-    await updateDoc(doc(db,'estoque',id), { quantidade: parseFloat(nova) || 0 });
+  window._ajustarEstoque = async (id, nome, atual, unidade) => {
+    const nova = prompt(`Entrada de "${nome}"\nEstoque atual: ${atual} ${unidade}\n\nDigite a quantidade a ADICIONAR:`, '');
+    if (nova === null || nova === '') return;
+    const add = parseFloat(nova) || 0;
+    await updateDoc(doc(db,'estoque',id), { quantidade: atual + add });
     carregarEstoque();
   };
 
@@ -642,9 +781,12 @@
 
   // PEDIDOS
   window.carregarPedidos = async () => {
-    const snap = await getDocs(query(collection(db,'pedidos'), orderBy('criadoEm','desc')));
+    const snap = await getDocs(collection(db,'pedidos'));
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
-    const ativos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p => p.status !== 'entregue').slice(0,20);
+    const ativos = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(p => p.status !== 'entregue')
+      .sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0))
+      .slice(0,20);
     document.getElementById('pedidos-grid').innerHTML = ativos.length ? ativos.map(p => {
       const itensStr = (p.itens||[]).map(i=>`${i.quantidade}x ${i.nome}`).join(', ');
       const stTag = p.status==='novo'?'<span class="pedido-status status-novo">Novo</span>':p.status==='preparo'?'<span class="pedido-status status-preparo">Em preparo</span>':'<span class="pedido-status status-pronto">Pronto</span>';
@@ -678,8 +820,8 @@
 
   // FINANCEIRO
   async function carregarFinanceiro() {
-    const snap = await getDocs(query(collection(db,'pedidos'), orderBy('criadoEm','desc')));
-    const todos = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const snap = await getDocs(collection(db,'pedidos'));
+    const todos = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
     const agora = new Date();
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
     const inicioSemana = new Date(agora); inicioSemana.setDate(agora.getDate() - agora.getDay());
