@@ -391,34 +391,171 @@
   </div>
 </div>
 
-<!-- MODAL ENTRADA -->
-<div class="modal-overlay hidden" id="modal-entrada">
-  <div class="modal">
-    <div class="modal-titulo">ENTRADA DE MERCADORIA</div>
+<!-- MODAL NOTA FISCAL -->
+<div class="modal-overlay hidden" id="modal-entrada" style="align-items:flex-start;padding:16px;overflow-y:auto">
+  <div class="modal" style="max-width:680px;width:100%;margin:auto">
 
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="modal-titulo" style="margin-bottom:0">ENTRADA DE NOTA FISCAL</div>
+      <button onclick="fecharModal('modal-entrada')" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">×</button>
+    </div>
+
+    <!-- MODO DE ENTRADA -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <div id="modo-xml-btn" onclick="setModoEntrada('xml')"
+        style="border:2px solid var(--azul);border-radius:12px;padding:14px;cursor:pointer;text-align:center;background:var(--azul);color:#fff">
+        <div style="font-size:24px;margin-bottom:4px">📄</div>
+        <div style="font-weight:700;font-size:13px">Importar XML</div>
+        <div style="font-size:11px;opacity:.7;margin-top:2px">Nota Fiscal Eletrônica</div>
+      </div>
+      <div id="modo-manual-btn" onclick="setModoEntrada('manual')"
+        style="border:2px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;text-align:center;background:#fff">
+        <div style="font-size:24px;margin-bottom:4px">✏️</div>
+        <div style="font-weight:700;font-size:13px;color:var(--text)">Entrada manual</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Cupom ou sem XML</div>
+      </div>
+    </div>
+
+    <!-- UPLOAD XML -->
+    <div id="secao-xml">
+      <div id="xml-dropzone"
+        style="border:2px dashed #c7d4f0;border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;margin-bottom:14px"
+        ondragover="event.preventDefault();this.style.borderColor='#0d2654'"
+        ondragleave="this.style.borderColor='#c7d4f0'"
+        ondrop="handleXMLDrop(event)">
+        <input type="file" id="xml-input" accept=".xml" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%" onchange="handleXMLFile(this)"/>
+        <div style="font-size:36px;margin-bottom:8px">📂</div>
+        <div style="font-size:14px;font-weight:600;color:var(--azul)">Arraste o XML aqui ou clique para selecionar</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Arquivo XML da NF-e emitido pelo fornecedor</div>
+      </div>
+    </div>
+
+    <!-- DADOS DA NOTA -->
+    <div id="secao-nota" style="display:none">
+
+      <!-- FORNECEDOR -->
+      <div style="background:#f8f8f4;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Fornecedor</div>
+        <div class="campo-row">
+          <div class="campo">
+            <label>Razão social / Nome</label>
+            <input type="text" id="nf-fornecedor" placeholder="Ex: Distribuidora XYZ Ltda"/>
+          </div>
+          <div class="campo">
+            <label>CNPJ / CPF</label>
+            <input type="text" id="nf-cnpj" placeholder="00.000.000/0000-00"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- DADOS DA NOTA -->
+      <div style="background:#f8f8f4;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Dados da nota</div>
+        <div class="campo-row">
+          <div class="campo">
+            <label>Número NF / Cupom</label>
+            <input type="text" id="nf-numero" placeholder="Ex: 001234"/>
+          </div>
+          <div class="campo">
+            <label>Série</label>
+            <input type="text" id="nf-serie" placeholder="Ex: 001"/>
+          </div>
+        </div>
+        <div class="campo-row">
+          <div class="campo">
+            <label>Data de emissão</label>
+            <input type="date" id="nf-data"/>
+          </div>
+          <div class="campo">
+            <label>Chave de acesso (opcional)</label>
+            <input type="text" id="nf-chave" placeholder="44 dígitos" maxlength="44"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUTOS DA NOTA -->
+      <div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px">Produtos da nota</div>
+          <button class="btn-sec" style="padding:6px 12px;font-size:12px" onclick="adicionarProdutoNota()">+ Adicionar produto</button>
+        </div>
+        <div id="nf-produtos-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div id="nf-produtos-vazio" style="text-align:center;padding:20px;border:1px dashed var(--border);border-radius:10px;color:var(--muted);font-size:13px">
+          Nenhum produto adicionado ainda
+        </div>
+      </div>
+
+      <!-- TOTAIS -->
+      <div id="nf-totais" style="display:none;background:#0d2654;border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Produtos</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:1px" id="nf-total-itens">0</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Total da nota</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#f5c518;letter-spacing:1px" id="nf-total-valor">R$ 0,00</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Itens vinculados</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#4ade80;letter-spacing:1px" id="nf-total-vinculados">0/0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGAMENTO -->
+      <div style="background:#f8f8f4;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Pagamento</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+          <button class="pgto-btn ativo" id="nf-pgto-dinheiro" onclick="selecionarPgtoNF('dinheiro')">Dinheiro</button>
+          <button class="pgto-btn" id="nf-pgto-cartao" onclick="selecionarPgtoNF('cartao')">Cartão</button>
+          <button class="pgto-btn" id="nf-pgto-boleto" onclick="selecionarPgtoNF('boleto')">Boleto</button>
+        </div>
+        <input type="hidden" id="nf-pgto" value="dinheiro"/>
+        <div id="nf-boleto-wrap" style="display:none">
+          <div class="campo-row">
+            <div class="campo"><label>Vencimento</label><input type="date" id="nf-boleto-venc"/></div>
+            <div class="campo"><label>Nº boleto</label><input type="text" id="nf-boleto-num" placeholder="Ex: 00123"/></div>
+          </div>
+          <div class="campo">
+            <label>Agrupar com boleto existente?</label>
+            <select id="nf-boleto-grupo"><option value="">Novo boleto</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Observação</label>
+        <input type="text" id="nf-obs" placeholder="Ex: Compra mensal, desconto obtido..."/>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-sec" onclick="fecharModal('modal-entrada')">Cancelar</button>
+        <button class="btn-prim" id="btn-confirmar-nota" onclick="confirmarNota()" style="flex:1;padding:13px;font-size:15px">Confirmar entrada da nota</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL VINCULAR PRODUTO XML -->
+<div class="modal-overlay hidden" id="modal-vincular" style="z-index:1100">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-titulo">VINCULAR PRODUTO</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px">
+      Produto da nota: <strong id="vincular-nome-nf"></strong>
+    </div>
     <div class="campo">
-      <label>Tipo de produto</label>
-      <select id="ent-tipo" onchange="onChangeTipoEntrada()">
-        <option value="ingrediente">Ingrediente do estoque</option>
-        <option value="produto">Produto para revenda (bebida, suco, água...)</option>
-      </select>
-    </div>
-
-    <div id="ent-ingrediente-wrap" class="campo">
-      <label>Ingrediente</label>
-      <select id="ent-ingrediente-sel" onchange="onSelectIngrediente()">
+      <label>Vincular a qual ingrediente do estoque?</label>
+      <select id="vincular-sel-estoque">
         <option value="">Selecione...</option>
+        <option value="__novo__">+ Criar novo ingrediente</option>
       </select>
     </div>
-
-    <div id="ent-produto-wrap" class="campo hidden">
-      <label>Nome do produto</label>
-      <input type="text" id="ent-produto-nome" placeholder="Ex: Coca-Cola lata 350ml"/>
-    </div>
-
     <div class="campo">
       <label>Categoria</label>
-      <select id="ent-categoria" onchange="onChangeCategoriaEntrada()">
+      <select id="vincular-categoria">
         <option value="sanduiches">Sanduíches</option>
         <option value="bebidas">Bebidas</option>
         <option value="sucos">Sucos</option>
@@ -428,87 +565,18 @@
         <option value="outros">Outros</option>
       </select>
     </div>
-
-    <div class="campo-row">
-      <div class="campo">
-        <label>Qtd comprada <span id="ent-unidade-lbl" style="color:var(--muted);font-weight:400">(un)</span></label>
-        <input type="number" id="ent-qtd" step="0.001" min="0" placeholder="Ex: 10" oninput="calcularEntrada()"/>
-      </div>
-      <div class="campo">
-        <label>Custo unitário (R$)</label>
-        <input type="number" id="ent-custo" step="0.01" min="0" placeholder="Ex: 2,50" oninput="calcularEntrada()"/>
-      </div>
-    </div>
-
     <div class="campo">
-      <label>Margem de lucro desejada (%)</label>
-      <div style="display:flex;align-items:center;gap:12px">
-        <input type="range" id="ent-margem-slider" min="0" max="500" step="5" value="100" oninput="syncMargemInput(this.value)" style="flex:1"/>
-        <input type="number" id="ent-margem-input" min="0" max="999" step="5" value="100" oninput="syncMargemSlider(this.value)" style="width:80px;text-align:center"/>
+      <label>Margem de lucro (%)</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="range" id="vincular-margem-slider" min="0" max="500" step="5" value="150" oninput="document.getElementById('vincular-margem-num').value=this.value;calcularVincular()" style="flex:1"/>
+        <input type="number" id="vincular-margem-num" value="150" style="width:70px;text-align:center" oninput="document.getElementById('vincular-margem-slider').value=this.value;calcularVincular()"/>
         <span style="font-size:13px;color:var(--muted)">%</span>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px" id="ent-margem-ref"></div>
     </div>
-
-    <!-- RESULTADO -->
-    <div id="ent-resultado" style="display:none;background:#0d2654;border-radius:12px;padding:16px;margin-top:4px">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center">
-        <div>
-          <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Total pago</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:1px" id="ent-total-pago">R$ 0,00</div>
-        </div>
-        <div>
-          <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Preço de venda</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#f5c518;letter-spacing:1px" id="ent-preco-venda">R$ 0,00</div>
-        </div>
-        <div>
-          <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Lucro unitário</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#4ade80;letter-spacing:1px" id="ent-lucro-unit">R$ 0,00</div>
-        </div>
-      </div>
-      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);font-size:12px;color:rgba(255,255,255,.6)" id="ent-resumo-txt"></div>
-    </div>
-
-    <div class="campo" style="margin-top:14px">
-      <label>Forma de pagamento</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
-        <button class="pgto-btn ativo" id="pgto-dinheiro" onclick="selecionarPgtoEntrada('dinheiro')">Dinheiro</button>
-        <button class="pgto-btn" id="pgto-cartao" onclick="selecionarPgtoEntrada('cartao')">Cartão</button>
-        <button class="pgto-btn" id="pgto-boleto" onclick="selecionarPgtoEntrada('boleto')">Boleto</button>
-      </div>
-      <input type="hidden" id="ent-pgto" value="dinheiro"/>
-    </div>
-
-    <!-- CAMPO BOLETO -->
-    <div id="ent-boleto-wrap" style="display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:#854d0e;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Dados do boleto</div>
-      <div class="campo-row">
-        <div class="campo">
-          <label>Vencimento</label>
-          <input type="date" id="ent-boleto-venc"/>
-        </div>
-        <div class="campo">
-          <label>Nº do boleto / NF</label>
-          <input type="text" id="ent-boleto-num" placeholder="Ex: NF 00123"/>
-        </div>
-      </div>
-      <div class="campo">
-        <label>Agrupar com boleto existente?</label>
-        <select id="ent-boleto-grupo">
-          <option value="">Novo boleto (este item)</option>
-        </select>
-      </div>
-      <div id="ent-boleto-grupo-info" style="display:none;background:#fff;border-radius:8px;padding:10px 12px;font-size:12px;color:#854d0e;margin-top:6px;border:1px solid #fcd34d"></div>
-    </div>
-
-    <div class="campo">
-      <label>Observação (opcional)</label>
-      <input type="text" id="ent-obs" placeholder="Ex: Fornecedor X, NF 1234..."/>
-    </div>
-
+    <div id="vincular-resultado" style="background:#0d2654;border-radius:10px;padding:12px;margin-top:8px;font-size:13px;color:rgba(255,255,255,.8);display:none"></div>
     <div class="modal-footer">
-      <button class="btn-sec" onclick="fecharModal('modal-entrada')">Cancelar</button>
-      <button class="btn-prim" id="btn-salvar-entrada" onclick="salvarEntrada()">Confirmar entrada</button>
+      <button class="btn-sec" onclick="fecharModal('modal-vincular')">Cancelar</button>
+      <button class="btn-prim" onclick="confirmarVinculo()">Confirmar vínculo</button>
     </div>
   </div>
 </div>
@@ -1201,52 +1269,362 @@
     res.style.display = 'block';
   };
 
-  window.selecionarPgtoEntrada = tipo => {
-    document.getElementById('ent-pgto').value = tipo;
-    ['dinheiro','cartao','boleto'].forEach(t => {
-      document.getElementById('pgto-' + t)?.classList.toggle('ativo', t === tipo);
+  // ===== SISTEMA DE NOTA FISCAL =====
+  let nfProdutos = []; // [{nomeNF, qtd, unidade, valorUnit, valorTotal, estoqueId, categoria, margem, vinculado}]
+  let nfModo = 'xml';
+  let vincularIndex = null;
+
+  window.abrirModalEntrada = async () => {
+    await carregarEstoqueCache();
+    nfProdutos = [];
+    nfModo = 'xml';
+    // Reset campos
+    ['nf-fornecedor','nf-cnpj','nf-numero','nf-serie','nf-chave','nf-obs','nf-boleto-num'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value = '';
     });
-    document.getElementById('ent-boleto-wrap').style.display = tipo === 'boleto' ? 'block' : 'none';
-    if (tipo === 'boleto') carregarBoletosAbertos();
+    document.getElementById('nf-data').value = new Date().toISOString().slice(0,10);
+    document.getElementById('secao-xml').style.display = 'block';
+    document.getElementById('secao-nota').style.display = 'none';
+    document.getElementById('nf-produtos-lista').innerHTML = '';
+    document.getElementById('nf-produtos-vazio').style.display = 'block';
+    document.getElementById('nf-totais').style.display = 'none';
+    setModoEntrada('xml');
+    selecionarPgtoNF('dinheiro');
+    await carregarBoletosAbertosNF();
+    document.getElementById('modal-entrada').classList.remove('hidden');
   };
 
-  async function carregarBoletosAbertos() {
+  window.setModoEntrada = modo => {
+    nfModo = modo;
+    const xmlBtn = document.getElementById('modo-xml-btn');
+    const manBtn = document.getElementById('modo-manual-btn');
+    if (modo === 'xml') {
+      xmlBtn.style.background = 'var(--azul)'; xmlBtn.style.color = '#fff'; xmlBtn.style.borderColor = 'var(--azul)';
+      manBtn.style.background = '#fff'; manBtn.style.color = 'var(--text)'; manBtn.style.borderColor = '#e8e8e0';
+      document.getElementById('secao-xml').style.display = 'block';
+    } else {
+      manBtn.style.background = 'var(--azul)'; manBtn.style.color = '#fff'; manBtn.style.borderColor = 'var(--azul)';
+      xmlBtn.style.background = '#fff'; xmlBtn.style.color = 'var(--text)'; xmlBtn.style.borderColor = '#e8e8e0';
+      document.getElementById('secao-xml').style.display = 'none';
+      document.getElementById('secao-nota').style.display = 'block';
+    }
+  };
+
+  // ===== LEITURA DE XML NF-e =====
+  window.handleXMLDrop = e => {
+    e.preventDefault();
+    document.getElementById('xml-dropzone').style.borderColor = '#c7d4f0';
+    const file = e.dataTransfer.files[0];
+    if (file) processarXML(file);
+  };
+
+  window.handleXMLFile = input => {
+    if (input.files[0]) processarXML(input.files[0]);
+  };
+
+  function processarXML(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(e.target.result, 'text/xml');
+
+        // Fornecedor
+        const emit = xml.querySelector('emit');
+        const xNome = emit?.querySelector('xNome')?.textContent || '';
+        const CNPJ = emit?.querySelector('CNPJ')?.textContent || '';
+        const cnpjFmt = CNPJ.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+
+        // Dados da nota
+        const ide = xml.querySelector('ide');
+        const nNF = ide?.querySelector('nNF')?.textContent || '';
+        const serie = ide?.querySelector('serie')?.textContent || '';
+        const dhEmi = ide?.querySelector('dhEmi')?.textContent || ide?.querySelector('dEmi')?.textContent || '';
+        const chave = xml.querySelector('chNFe')?.textContent || '';
+
+        // Preenche campos
+        document.getElementById('nf-fornecedor').value = xNome;
+        document.getElementById('nf-cnpj').value = cnpjFmt || CNPJ;
+        document.getElementById('nf-numero').value = nNF;
+        document.getElementById('nf-serie').value = serie;
+        if (dhEmi) document.getElementById('nf-data').value = dhEmi.slice(0,10);
+        document.getElementById('nf-chave').value = chave;
+
+        // Produtos
+        const dets = xml.querySelectorAll('det');
+        nfProdutos = [];
+        dets.forEach(det => {
+          const prod = det.querySelector('prod');
+          const nome = prod?.querySelector('xProd')?.textContent || '';
+          const qtd = parseFloat(prod?.querySelector('qCom')?.textContent || '0');
+          const unidade = prod?.querySelector('uCom')?.textContent || 'UN';
+          const valorUnit = parseFloat(prod?.querySelector('vUnCom')?.textContent || '0');
+          const valorTotal = parseFloat(prod?.querySelector('vProd')?.textContent || '0');
+          const ncm = prod?.querySelector('NCM')?.textContent || '';
+          // Tenta cruzar automaticamente com estoque pelo nome
+          const match = estoqueCache.find(e =>
+            e.nome.toLowerCase().includes(nome.toLowerCase().slice(0,6)) ||
+            nome.toLowerCase().includes(e.nome.toLowerCase().slice(0,6))
+          );
+          nfProdutos.push({ nomeNF: nome, qtd, unidade, valorUnit, valorTotal, ncm,
+            estoqueId: match?.id || null, estoqueName: match?.nome || null,
+            categoria: 'ingredientes', margem: 150, vinculado: !!match });
+        });
+
+        document.getElementById('xml-dropzone').innerHTML =
+          `<div style="font-size:28px;margin-bottom:6px">✅</div>
+           <div style="font-size:14px;font-weight:600;color:#16a34a">XML lido com sucesso!</div>
+           <div style="font-size:12px;color:var(--muted);margin-top:4px">${dets.length} produto(s) encontrado(s) — NF ${nNF} · ${xNome}</div>`;
+
+        document.getElementById('secao-nota').style.display = 'block';
+        renderProdutosNota();
+        atualizarTotaisNota();
+      } catch(err) {
+        alert('Erro ao ler XML: ' + err.message + '\n\nVerifique se é um arquivo XML de NF-e válido.');
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  // ===== PRODUTOS DA NOTA =====
+  window.adicionarProdutoNota = () => {
+    nfProdutos.push({ nomeNF: '', qtd: 1, unidade: 'UN', valorUnit: 0, valorTotal: 0,
+      estoqueId: null, estoqueName: null, categoria: 'ingredientes', margem: 150, vinculado: false });
+    renderProdutosNota();
+    atualizarTotaisNota();
+  };
+
+  function renderProdutosNota() {
+    const lista = document.getElementById('nf-produtos-lista');
+    const vazio = document.getElementById('nf-produtos-vazio');
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    vazio.style.display = nfProdutos.length ? 'none' : 'block';
+    lista.innerHTML = nfProdutos.map((p, i) => {
+      const vinculoHtml = p.estoqueId
+        ? `<div style="display:flex;align-items:center;gap:6px;flex:1">
+             <span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">✓ ${p.estoqueName}</span>
+             <button onclick="abrirVincular(${i})" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline">trocar</button>
+           </div>`
+        : `<button onclick="abrirVincular(${i})"
+             style="background:#fff0e0;color:#b45309;border:1px solid #fcd34d;border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">
+             ⚠ Vincular ao estoque
+           </button>`;
+      return `<div style="background:#fff;border:1px solid ${p.estoqueId?'#bbf7d0':'#fde68a'};border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input type="text" value="${p.nomeNF}" placeholder="Nome do produto"
+            onchange="nfProdutos[${i}].nomeNF=this.value"
+            style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit"/>
+          <input type="number" value="${p.qtd}" min="0" step="0.001" placeholder="Qtd"
+            onchange="nfProdutos[${i}].qtd=parseFloat(this.value)||0;nfProdutos[${i}].valorTotal=nfProdutos[${i}].qtd*nfProdutos[${i}].valorUnit;atualizarTotaisNota()"
+            style="width:80px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:center;font-family:inherit"/>
+          <input type="text" value="${p.unidade}" placeholder="UN"
+            onchange="nfProdutos[${i}].unidade=this.value"
+            style="width:60px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:center;font-family:inherit"/>
+          <input type="number" value="${p.valorUnit}" min="0" step="0.01" placeholder="R$ unit"
+            onchange="nfProdutos[${i}].valorUnit=parseFloat(this.value)||0;nfProdutos[${i}].valorTotal=nfProdutos[${i}].qtd*nfProdutos[${i}].valorUnit;atualizarTotaisNota()"
+            style="width:100px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit"/>
+          <span style="font-size:13px;font-weight:600;color:var(--azul);min-width:80px;text-align:right">${fmt(p.valorTotal)}</span>
+          <button onclick="nfProdutos.splice(${i},1);renderProdutosNota();atualizarTotaisNota()"
+            style="background:none;border:none;color:#dc2626;font-size:18px;cursor:pointer;padding:0 4px">×</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          ${vinculoHtml}
+          <select onchange="nfProdutos[${i}].categoria=this.value"
+            style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit">
+            ${['sanduiches','bebidas','sucos','agua','cremes','ingredientes','outros'].map(c =>
+              `<option value="${c}" ${p.categoria===c?'selected':''}>${margensConfig[c]?.label||c}</option>`).join('')}
+          </select>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--muted)">Margem:</span>
+            <input type="number" value="${p.margem}" min="0" max="999" step="5"
+              onchange="nfProdutos[${i}].margem=parseInt(this.value)||0"
+              style="width:64px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;font-family:inherit"/>
+            <span style="font-size:11px;color:var(--muted)">%</span>
+            <span style="font-size:11px;color:#16a34a;font-weight:600">→ ${fmt(p.valorUnit*(1+(p.margem/100)))}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function atualizarTotaisNota() {
+    if (!nfProdutos.length) { document.getElementById('nf-totais').style.display = 'none'; return; }
+    const total = nfProdutos.reduce((a,p) => a+(p.valorTotal||0), 0);
+    const vinculados = nfProdutos.filter(p => p.estoqueId).length;
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    document.getElementById('nf-totais').style.display = 'block';
+    document.getElementById('nf-total-itens').textContent = nfProdutos.length;
+    document.getElementById('nf-total-valor').textContent = fmt(total);
+    document.getElementById('nf-total-vinculados').textContent = `${vinculados}/${nfProdutos.length}`;
+  }
+
+  // ===== VINCULAR PRODUTO =====
+  window.abrirVincular = idx => {
+    vincularIndex = idx;
+    const p = nfProdutos[idx];
+    document.getElementById('vincular-nome-nf').textContent = p.nomeNF;
+    document.getElementById('vincular-categoria').value = p.categoria;
+    document.getElementById('vincular-margem-slider').value = p.margem;
+    document.getElementById('vincular-margem-num').value = p.margem;
+    const sel = document.getElementById('vincular-sel-estoque');
+    sel.innerHTML = '<option value="">Selecione...</option>' +
+      '<option value="__novo__">+ Criar novo ingrediente</option>' +
+      estoqueCache.sort((a,b)=>a.nome.localeCompare(b.nome))
+        .map(e => `<option value="${e.id}" ${p.estoqueId===e.id?'selected':''}>${e.nome}</option>`).join('');
+    calcularVincular();
+    document.getElementById('modal-vincular').classList.remove('hidden');
+  };
+
+  window.calcularVincular = () => {
+    const idx = vincularIndex;
+    if (idx === null) return;
+    const p = nfProdutos[idx];
+    const margem = parseInt(document.getElementById('vincular-margem-num').value) || 0;
+    const precoVenda = p.valorUnit * (1 + margem/100);
+    const res = document.getElementById('vincular-resultado');
+    if (p.valorUnit > 0) {
+      res.style.display = 'block';
+      const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+      res.innerHTML = `Custo: <strong>${fmt(p.valorUnit)}</strong> → Venda sugerida: <strong style="color:#f5c518">${fmt(precoVenda)}</strong> · Lucro: <strong style="color:#4ade80">${fmt(precoVenda-p.valorUnit)}</strong>/un`;
+    }
+  };
+
+  window.confirmarVinculo = async () => {
+    const idx = vincularIndex;
+    const selVal = document.getElementById('vincular-sel-estoque').value;
+    const margem = parseInt(document.getElementById('vincular-margem-num').value) || 0;
+    const cat = document.getElementById('vincular-categoria').value;
+    if (!selVal) { alert('Selecione um ingrediente ou crie um novo.'); return; }
+    if (selVal === '__novo__') {
+      // Cria ingrediente automaticamente
+      const p = nfProdutos[idx];
+      const ref = await addDoc(collection(db,'estoque'), {
+        nome: p.nomeNF, quantidade: 0, minimo: 0, custo: p.valorUnit,
+        unidade: 'un', unidadeUso: 'un', fator: 1,
+      });
+      nfProdutos[idx].estoqueId = ref.id;
+      nfProdutos[idx].estoqueName = p.nomeNF;
+      await carregarEstoqueCache();
+    } else {
+      const est = estoqueCache.find(e => e.id === selVal);
+      nfProdutos[idx].estoqueId = selVal;
+      nfProdutos[idx].estoqueName = est?.nome || selVal;
+    }
+    nfProdutos[idx].margem = margem;
+    nfProdutos[idx].categoria = cat;
+    nfProdutos[idx].vinculado = true;
+    fecharModal('modal-vincular');
+    renderProdutosNota();
+    atualizarTotaisNota();
+  };
+
+  // ===== PAGAMENTO NOTA =====
+  window.selecionarPgtoNF = tipo => {
+    document.getElementById('nf-pgto').value = tipo;
+    ['dinheiro','cartao','boleto'].forEach(t => {
+      document.getElementById('nf-pgto-' + t)?.classList.toggle('ativo', t === tipo);
+    });
+    document.getElementById('nf-boleto-wrap').style.display = tipo === 'boleto' ? 'block' : 'none';
+  };
+
+  async function carregarBoletosAbertosNF() {
     try {
       const snap = await getDocs(collection(db,'boletos'));
-      const abertos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(b => b.status !== 'pago');
-      const sel = document.getElementById('ent-boleto-grupo');
-      sel.innerHTML = '<option value="">Novo boleto (somente este item)</option>' +
+      const abertos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(b=>b.status!=='pago');
+      const sel = document.getElementById('nf-boleto-grupo');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">Novo boleto</option>' +
         abertos.map(b => {
-          const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
-          return `<option value="${b.id}">Boleto ${b.numero||b.id.slice(-4)} · vence ${b.vencimento||'--'} · ${fmt(b.totalAgrupado||0)} · ${b.itens?.length||0} item(s)</option>`;
+          const fmt = v => 'R$ '+Number(v).toFixed(2).replace('.',',');
+          return `<option value="${b.id}">Boleto ${b.numero||b.id.slice(-4)} · vence ${b.vencimento||'--'} · ${fmt(b.totalAgrupado||0)}</option>`;
         }).join('');
-      sel.onchange = () => {
-        const b = abertos.find(x => x.id === sel.value);
-        const info = document.getElementById('ent-boleto-grupo-info');
-        if (!b) { info.style.display = 'none'; return; }
-        const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
-        const itensStr = (b.itens||[]).map(i => `${i.nome} (${fmt(i.totalPago||0)})`).join(', ');
-        info.style.display = 'block';
-        info.innerHTML = `Itens no boleto: <strong>${itensStr}</strong><br>Total atual: <strong>${fmt(b.totalAgrupado||0)}</strong>`;
-      };
     } catch(e) {}
   }
 
-  async function salvarBoletoFirebase(entradaId, nome, totalPago, numero, vencimento, grupoId) {
+  // ===== CONFIRMAR NOTA =====
+  window.confirmarNota = async () => {
+    if (!nfProdutos.length) { alert('Adicione pelo menos um produto.'); return; }
+    const semVinculo = nfProdutos.filter(p => !p.estoqueId);
+    if (semVinculo.length) {
+      if (!confirm(`${semVinculo.length} produto(s) ainda não vinculado(s) ao estoque:\n${semVinculo.map(p=>p.nomeNF).join(', ')}\n\nDeseja confirmar mesmo assim? Esses itens serão registrados sem atualizar o estoque.`)) return;
+    }
+    const btn = document.getElementById('btn-confirmar-nota');
+    btn.textContent = 'Salvando...'; btn.disabled = true;
+    try {
+      const pgto = document.getElementById('nf-pgto').value;
+      const totalNota = nfProdutos.reduce((a,p)=>a+(p.valorTotal||0),0);
+      const fmt = v => 'R$ '+Number(v).toFixed(2).replace('.',',');
+      // Salva nota no Firestore
+      const notaRef = await addDoc(collection(db,'notas'), {
+        fornecedor: document.getElementById('nf-fornecedor').value,
+        cnpj: document.getElementById('nf-cnpj').value,
+        numero: document.getElementById('nf-numero').value,
+        serie: document.getElementById('nf-serie').value,
+        data: document.getElementById('nf-data').value,
+        chave: document.getElementById('nf-chave').value,
+        total: totalNota,
+        formaPagamento: pgto,
+        observacao: document.getElementById('nf-obs').value,
+        produtos: nfProdutos,
+        criadoEm: serverTimestamp(),
+      });
+      // Atualiza estoque de cada produto vinculado e salva entrada
+      for (const p of nfProdutos) {
+        const precoVenda = p.valorUnit * (1 + (p.margem||0)/100);
+        await addDoc(collection(db,'entradas'), {
+          tipo: 'nota', nome: p.nomeNF, categoria: p.categoria,
+          quantidade: p.qtd, custoUnit: p.valorUnit, totalPago: p.valorTotal,
+          margem: p.margem, precoVendaSugerido: precoVenda,
+          lucroUnit: precoVenda - p.valorUnit,
+          formaPagamento: pgto, notaId: notaRef.id,
+          ingredienteId: p.estoqueId || null,
+          fornecedor: document.getElementById('nf-fornecedor').value,
+          numeroNF: document.getElementById('nf-numero').value,
+          criadoEm: serverTimestamp(),
+        });
+        if (p.estoqueId) {
+          const est = estoqueCache.find(e=>e.id===p.estoqueId);
+          if (est) {
+            await updateDoc(doc(db,'estoque',p.estoqueId), {
+              quantidade: (est.quantidade||0) + p.qtd,
+              custo: p.valorUnit,
+            });
+          }
+        }
+      }
+      await carregarEstoqueCache();
+      // Boleto
+      if (pgto === 'boleto') {
+        const numero = document.getElementById('nf-boleto-num').value;
+        const venc = document.getElementById('nf-boleto-venc').value;
+        const grupo = document.getElementById('nf-boleto-grupo').value;
+        await salvarBoletoFirebase(notaRef.id, `NF ${document.getElementById('nf-numero').value} - ${document.getElementById('nf-fornecedor').value}`, totalNota, numero, venc, grupo);
+      }
+      fecharModal('modal-entrada');
+      carregarEntradas();
+      alert(`Nota fiscal registrada com sucesso!\n${nfProdutos.filter(p=>p.estoqueId).length} ingrediente(s) atualizados no estoque.\nTotal da nota: ${fmt(totalNota)}`);
+    } catch(e) { alert('Erro: ' + e.message); }
+    btn.textContent = 'Confirmar entrada da nota'; btn.disabled = false;
+  };
+
+  // Mantém compatibilidade com funções antigas que ainda são chamadas
+  window.selecionarPgtoEntrada = window.selecionarPgtoNF;
+  window.salvarEntrada = window.confirmarNota;
+
+  async function salvarBoletoFirebase(refId, nome, totalPago, numero, vencimento, grupoId) {
     if (grupoId) {
       const snapB = await getDocs(collection(db,'boletos'));
       const b = snapB.docs.find(d => d.id === grupoId);
       if (b) {
         const data = b.data();
-        const novosItens = [...(data.itens||[]), {id:entradaId, nome, totalPago}];
-        const novoTotal = novosItens.reduce((a,i) => a+(i.totalPago||0), 0);
-        await updateDoc(doc(db,'boletos',grupoId), {itens:novosItens, totalAgrupado:novoTotal});
+        const novosItens = [...(data.itens||[]), {id:refId, nome, totalPago}];
+        await updateDoc(doc(db,'boletos',grupoId), {itens:novosItens, totalAgrupado: novosItens.reduce((a,i)=>a+(i.totalPago||0),0)});
         return grupoId;
       }
     }
     const ref = await addDoc(collection(db,'boletos'), {
       numero: numero||'', vencimento: vencimento||'',
-      itens: [{id:entradaId, nome, totalPago}],
+      itens: [{id:refId, nome, totalPago}],
       totalAgrupado: totalPago, status: 'aberto',
       criadoEm: serverTimestamp(),
     });
@@ -1257,7 +1635,7 @@
     const snap = await getDocs(collection(db,'boletos'));
     const boletos = snap.docs.map(d=>({id:d.id,...d.data()}))
       .sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
-    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const fmt = v => 'R$ '+Number(v).toFixed(2).replace('.',',');
     const hoje = new Date(); hoje.setHours(0,0,0,0);
     document.getElementById('boletos-lista').innerHTML = boletos.length ? boletos.map(b => {
       const vencDt = b.vencimento ? new Date(b.vencimento+'T00:00:00') : null;
@@ -1265,12 +1643,12 @@
       const dias = vencDt ? Math.ceil((vencDt-hoje)/86400000) : null;
       const stCor = b.status==='pago'?'#16a34a':vencido?'#dc2626':'#d97706';
       const stTxt = b.status==='pago'?'✓ Pago':vencido?'Vencido':dias===0?'Vence hoje':dias>0?`Vence em ${dias} dia(s)`:'Em aberto';
+      const borderCor = vencido&&b.status!=='pago'?'#fca5a5':b.status==='pago'?'#bbf7d0':'#e8e8e0';
+      const bgCor = vencido&&b.status!=='pago'?'#fff5f5':b.status==='pago'?'#f0fdf4':'#fff';
       const itensHtml = (b.itens||[]).map(i =>
         `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0e8;font-size:13px">
            <span>${i.nome}</span><span style="color:var(--muted)">${fmt(i.totalPago||0)}</span>
          </div>`).join('');
-      const borderCor = vencido&&b.status!=='pago' ? '#fca5a5' : b.status==='pago' ? '#bbf7d0' : '#e8e8e0';
-      const bgCor = vencido&&b.status!=='pago' ? '#fff5f5' : b.status==='pago' ? '#f0fdf4' : '#fff';
       return `<div style="background:#fff;border:1px solid ${borderCor};border-radius:12px;overflow:hidden">
         <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;background:${bgCor}">
           <div>
@@ -1283,7 +1661,7 @@
           </div>
         </div>
         <div style="padding:6px 16px 10px">${itensHtml}</div>
-        ${b.status!=='pago'?`<div style="padding:10px 16px;border-top:1px solid var(--border)">
+        ${b.status!=='pago'?`<div style="padding:10px 16px;border-top:1px solid #e8e8e0">
           <button class="btn-prim" style="padding:8px 18px;font-size:12px" onclick="window._pagarBoleto('${b.id}')">Marcar como pago</button>
         </div>`:''}
       </div>`;
@@ -1291,74 +1669,22 @@
   }
 
   window._pagarBoleto = async id => {
-    if (!confirm('Marcar este boleto como pago?')) return;
+    if (!confirm('Marcar boleto como pago?')) return;
     await updateDoc(doc(db,'boletos',id), {status:'pago'});
     carregarBoletos();
-  };
-
-  window.salvarEntrada = async () => {
-    const btn = document.getElementById('btn-salvar-entrada');
-    btn.textContent = 'Salvando...'; btn.disabled = true;
-    try {
-      const tipo = document.getElementById('ent-tipo').value;
-      const qtd = parseFloat(document.getElementById('ent-qtd').value) || 0;
-      const custo = parseFloat(document.getElementById('ent-custo').value) || 0;
-      const margem = parseFloat(document.getElementById('ent-margem-input').value) || 0;
-      const cat = document.getElementById('ent-categoria').value;
-      const pgto = document.getElementById('ent-pgto').value;
-      const precoVenda = custo * (1 + margem / 100);
-      let nome = '';
-      let ingId = null;
-      if (tipo === 'ingrediente') {
-        const sel = document.getElementById('ent-ingrediente-sel');
-        ingId = sel.value;
-        nome = sel.options[sel.selectedIndex]?.text?.split(' (em')[0] || '';
-        if (ingId) {
-          const est = estoqueCache.find(e => e.id === ingId);
-          if (est) {
-            await updateDoc(doc(db,'estoque',ingId), { quantidade: (est.quantidade||0)+qtd, custo });
-            await carregarEstoqueCache();
-          }
-        }
-      } else {
-        nome = document.getElementById('ent-produto-nome').value;
-      }
-      const totalPago = qtd * custo;
-      const entradaRef = await addDoc(collection(db,'entradas'), {
-        tipo, nome, categoria: cat, quantidade: qtd,
-        custoUnit: custo, totalPago,
-        margem, precoVendaSugerido: precoVenda,
-        lucroUnit: precoVenda - custo,
-        formaPagamento: pgto,
-        observacao: document.getElementById('ent-obs').value,
-        ingredienteId: ingId,
-        criadoEm: serverTimestamp(),
-      });
-      // Se boleto, salva/agrupa
-      if (pgto === 'boleto') {
-        const numero = document.getElementById('ent-boleto-num').value;
-        const vencimento = document.getElementById('ent-boleto-venc').value;
-        const grupoId = document.getElementById('ent-boleto-grupo').value;
-        const boletoId = await salvarBoletoFirebase(entradaRef.id, nome, totalPago, numero, vencimento, grupoId);
-        await updateDoc(doc(db,'entradas',entradaRef.id), {boletoId});
-      }
-      fecharModal('modal-entrada');
-      carregarEntradas();
-    } catch(e) { alert('Erro: ' + e.message); }
-    btn.textContent = 'Confirmar entrada'; btn.disabled = false;
   };
 
   async function carregarEntradas() {
     const snap = await getDocs(collection(db,'entradas'));
     const entradas = snap.docs.map(d=>({id:d.id,...d.data()}))
       .sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
-    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const fmt = v => 'R$ '+Number(v).toFixed(2).replace('.',',');
     const fmtDt = ts => ts ? ts.toDate().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '--';
     const pgtoTag = p => p==='dinheiro'?'<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">Dinheiro</span>':p==='cartao'?'<span style="background:#dbeafe;color:#1e40af;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">Cartão</span>':'<span style="background:#fef9c3;color:#854d0e;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">Boleto</span>';
     document.getElementById('tabela-entradas').innerHTML = entradas.map(e => `
       <tr>
         <td style="font-size:12px;color:var(--muted)">${fmtDt(e.criadoEm)}</td>
-        <td><strong>${e.nome}</strong>${e.observacao?`<br><span style="font-size:11px;color:var(--muted)">${e.observacao}</span>`:''}</td>
+        <td><strong>${e.nome}</strong><br><span style="font-size:11px;color:var(--muted)">${e.fornecedor?'NF '+e.numeroNF+' · '+e.fornecedor:e.observacao||''}</span></td>
         <td><span style="font-size:11px;background:#f0f4ff;color:#1a3a6b;padding:2px 8px;border-radius:10px">${margensConfig[e.categoria]?.label||e.categoria}</span></td>
         <td>${e.quantidade} un</td>
         <td>${fmt(e.custoUnit||0)}</td>
@@ -1368,6 +1694,9 @@
         <td style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#16a34a;letter-spacing:1px">${fmt(e.precoVendaSugerido||0)}</td>
       </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;padding:20px;color:#aaa">Nenhuma entrada registrada.</td></tr>';
   }
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>
