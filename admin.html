@@ -297,54 +297,60 @@
   <div class="modal">
     <div class="modal-titulo" id="est-modal-titulo">NOVO INGREDIENTE</div>
 
-    <div class="campo"><label>Nome do ingrediente</label>
-      <input type="text" id="est-nome" placeholder="Ex: Carne bovina blend"/>
+    <div class="campo">
+      <label>Nome do ingrediente</label>
+      <input type="text" id="est-nome" placeholder="Ex: Hambúrguer blend"/>
+    </div>
+
+    <div style="background:#f8f8f4;border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">Como você compra e usa esse ingrediente</div>
+      <div class="campo-row">
+        <div class="campo">
+          <label>Você compra em</label>
+          <select id="est-unidade-compra" onchange="syncUnidadeUso()">
+            <option value="kg">kg — quilograma</option>
+            <option value="L">L — litro</option>
+            <option value="un">un — unidade</option>
+            <option value="pacote">pacote</option>
+            <option value="cx">caixa</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Usa na receita em</label>
+          <select id="est-unidade-uso" onchange="onChangeUnidadeUso()">
+            <option value="g">g — gramas</option>
+            <option value="ml">ml — mililitros</option>
+            <option value="un">un — unidade</option>
+            <option value="fatia">fatia</option>
+            <option value="folha">folha</option>
+          </select>
+        </div>
+      </div>
+      <div id="est-conversao-box" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;margin-top:4px">
+        <span style="font-size:16px">🔄</span>
+        <span id="est-conversao-txt">1 kg = 1000 g</span>
+        <span style="color:var(--muted);font-size:11px;margin-left:4px" id="est-fator-txt"></span>
+      </div>
+      <input type="hidden" id="est-fator"/>
     </div>
 
     <div class="campo-row">
-      <div class="campo"><label>Unidade de compra</label>
-        <select id="est-unidade-compra" onchange="syncUnidadeUso()">
-          <option value="kg">kg (quilograma)</option>
-          <option value="L">L (litro)</option>
-          <option value="un">un (unidade)</option>
-          <option value="pacote">pacote</option>
-          <option value="cx">caixa</option>
-        </select>
-      </div>
-      <div class="campo"><label>Unidade de uso na receita</label>
-        <select id="est-unidade-uso">
-          <option value="g">g (gramas)</option>
-          <option value="ml">ml (mililitros)</option>
-          <option value="un">un (unidade)</option>
-          <option value="fatia">fatia</option>
-          <option value="folha">folha</option>
-          <option value="colher">colher</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="campo-row">
-      <div class="campo"><label>Qtd em estoque <span id="est-unidade-label" style="color:var(--muted);font-weight:400">(kg)</span></label>
+      <div class="campo">
+        <label>Qtd em estoque <span id="est-unidade-label" style="color:var(--muted);font-weight:400">(kg)</span></label>
         <input type="number" id="est-qtd" step="0.001" min="0" placeholder="Ex: 5"/>
       </div>
-      <div class="campo"><label>Qtd mínima para alerta <span style="color:var(--muted);font-weight:400" id="est-min-label">(kg)</span></label>
+      <div class="campo">
+        <label>Alerta de estoque baixo <span id="est-min-label" style="color:var(--muted);font-weight:400">(kg)</span></label>
         <input type="number" id="est-min" step="0.001" min="0" placeholder="Ex: 1"/>
       </div>
     </div>
 
-    <div class="campo-row">
-      <div class="campo"><label>Custo por unidade de compra (R$)</label>
-        <input type="number" id="est-custo" step="0.01" min="0" placeholder="Ex: 32,00 por kg"/>
-      </div>
-      <div class="campo"><label>Fator de conversão</label>
-        <input type="number" id="est-fator" step="1" min="1" placeholder="Ex: 1000 (1kg = 1000g)" readonly style="background:#f8f8f8;color:var(--muted)"/>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:12px">
-      O fator de conversão é calculado automaticamente (ex: 1 kg = 1000 g).
+    <div class="campo">
+      <label>Custo por <span id="est-custo-label">kg</span> (R$)</label>
+      <input type="number" id="est-custo" step="0.01" min="0" placeholder="Ex: 32,00" oninput="atualizarCustoInfo()"/>
     </div>
 
-    <div id="est-custo-info" style="display:none;background:#f0f7ff;border-radius:8px;padding:10px 12px;font-size:12px;color:#1a56a0;margin-bottom:12px"></div>
+    <div id="est-custo-info" style="display:none;background:#f0f7ff;border-radius:8px;padding:10px 14px;font-size:12px;color:#1a56a0;margin-bottom:4px;line-height:1.7"></div>
 
     <div class="modal-footer">
       <button class="btn-sec" onclick="fecharModal('modal-estoque')">Cancelar</button>
@@ -629,53 +635,70 @@
 
   // Fatores de conversão: unidade_compra → unidade_uso
   const FATORES = {
-    'kg': {'g': 1000, 'kg': 1},
-    'L':  {'ml': 1000, 'L': 1},
-    'un': {'un': 1, 'fatia': 1, 'folha': 1, 'colher': 1},
-    'pacote': {'un': 1, 'pacote': 1},
-    'cx': {'un': 1, 'cx': 1},
+    'kg':     { 'g': 1000, 'kg': 1 },
+    'L':      { 'ml': 1000, 'L': 1 },
+    'un':     { 'un': 1, 'fatia': 1, 'folha': 1 },
+    'pacote': { 'un': 1, 'g': 1, 'pacote': 1 },
+    'cx':     { 'un': 1, 'cx': 1 },
   };
+
+  const NOMES_UNIDADE = { 'kg':'kg','L':'litro','un':'unidade','pacote':'pacote','cx':'caixa','g':'g','ml':'ml','fatia':'fatia','folha':'folha' };
 
   window.syncUnidadeUso = () => {
     const compra = document.getElementById('est-unidade-compra').value;
     const usoSel = document.getElementById('est-unidade-uso');
-    const fatorInput = document.getElementById('est-fator');
-    const lbl = document.getElementById('est-unidade-label');
-    const lblMin = document.getElementById('est-min-label');
-    lbl.textContent = '(' + compra + ')';
-    lblMin.textContent = '(' + compra + ')';
     const opcoes = FATORES[compra] || {'un':1};
-    usoSel.innerHTML = Object.keys(opcoes).map(u => `<option value="${u}">${u}</option>`).join('');
-    fatorInput.value = Object.values(opcoes)[0];
-    atualizarCustoInfo();
+    usoSel.innerHTML = Object.keys(opcoes).map(u =>
+      `<option value="${u}">${u}${u==='g'?' — gramas':u==='ml'?' — mililitros':u==='un'?' — unidade':''}</option>`
+    ).join('');
+    atualizarConversao();
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('est-unidade-uso')?.addEventListener('change', () => {
-      const compra = document.getElementById('est-unidade-compra').value;
-      const uso = document.getElementById('est-unidade-uso').value;
-      const fator = (FATORES[compra]||{})[uso] || 1;
-      document.getElementById('est-fator').value = fator;
-      atualizarCustoInfo();
-    });
-    document.getElementById('est-custo')?.addEventListener('input', atualizarCustoInfo);
-  });
+  window.onChangeUnidadeUso = () => { atualizarConversao(); };
 
-  function atualizarCustoInfo() {
+  function atualizarConversao() {
+    const compra = document.getElementById('est-unidade-compra')?.value || 'kg';
+    const uso = document.getElementById('est-unidade-uso')?.value || 'g';
+    const fator = (FATORES[compra]||{})[uso] || 1;
+    document.getElementById('est-fator').value = fator;
+    document.getElementById('est-unidade-label').textContent = '(' + compra + ')';
+    document.getElementById('est-min-label').textContent = '(' + compra + ')';
+    document.getElementById('est-custo-label').textContent = compra;
+    const txt = document.getElementById('est-conversao-txt');
+    if (fator > 1) {
+      txt.textContent = `1 ${compra} = ${fator} ${uso}`;
+      document.getElementById('est-fator-txt').textContent = `fator ${fator}`;
+    } else {
+      txt.textContent = `Compra e usa na mesma unidade (${compra})`;
+      document.getElementById('est-fator-txt').textContent = '';
+    }
+    atualizarCustoInfo();
+  }
+
+  window.atualizarCustoInfo = () => {
     const custo = parseFloat(document.getElementById('est-custo')?.value) || 0;
     const compra = document.getElementById('est-unidade-compra')?.value || 'kg';
     const uso = document.getElementById('est-unidade-uso')?.value || 'g';
     const fator = parseFloat(document.getElementById('est-fator')?.value) || 1;
     const info = document.getElementById('est-custo-info');
     if (!info) return;
-    if (custo > 0 && fator > 1) {
-      const custoUso = custo / fator;
+    if (custo > 0) {
       info.style.display = 'block';
-      info.textContent = `Custo por ${uso}: R$ ${custoUso.toFixed(4)} — ex: 180g = R$ ${(custoUso * 180).toFixed(2)}`;
+      if (fator > 1) {
+        const custoUso = custo / fator;
+        const ex1 = fator >= 1000 ? 100 : fator >= 100 ? 10 : 1;
+        const ex2 = fator >= 1000 ? 180 : fator >= 100 ? 50 : 1;
+        info.innerHTML =
+          `💰 Custo por ${uso}: <strong>R$ ${custoUso.toFixed(4)}</strong><br>` +
+          `• ${ex1}${uso} custa <strong>R$ ${(custoUso * ex1).toFixed(2)}</strong><br>` +
+          `• ${ex2}${uso} custa <strong>R$ ${(custoUso * ex2).toFixed(2)}</strong>`;
+      } else {
+        info.innerHTML = `💰 Custo por ${compra}: <strong>R$ ${custo.toFixed(2)}</strong>`;
+      }
     } else {
       info.style.display = 'none';
     }
-  }
+  };
 
   // ESTOQUE
   async function carregarEstoque() {
@@ -735,9 +758,8 @@
     document.getElementById('est-custo').value = it.custo || '';
     document.getElementById('est-unidade-compra').value = it.unidade || 'kg';
     syncUnidadeUso();
-    document.getElementById('est-unidade-uso').value = it.unidadeUso || 'g';
-    const fator = (FATORES[it.unidade]||{})[it.unidadeUso||'g'] || it.fator || 1;
-    document.getElementById('est-fator').value = fator;
+    if (it.unidadeUso) document.getElementById('est-unidade-uso').value = it.unidadeUso;
+    atualizarConversao();
     atualizarCustoInfo();
     document.getElementById('modal-estoque').classList.remove('hidden');
   };
