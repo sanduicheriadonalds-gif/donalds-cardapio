@@ -411,19 +411,34 @@
   }
 
   // LOGIN
+  function entrarAdmin(user) {
+    document.getElementById('tela-login').style.display = 'none';
+    document.getElementById('tela-admin').style.display = 'block';
+    document.getElementById('adm-user-nome').textContent = user;
+    carregarDashboard();
+  }
+
   window.fazerLogin = () => {
     const user = document.getElementById('login-user').value.trim();
     const senha = document.getElementById('login-senha').value;
     if (USUARIOS[user] && USUARIOS[user] === senha) {
-      document.getElementById('tela-login').style.display = 'none';
-      document.getElementById('tela-admin').style.display = 'block';
-      document.getElementById('adm-user-nome').textContent = user;
-      carregarDashboard();
+      localStorage.setItem('donalds_admin_user', user);
+      entrarAdmin(user);
     } else {
       document.getElementById('login-erro').style.display = 'block';
     }
   };
-  window.sair = () => { location.reload(); };
+
+  window.sair = () => {
+    localStorage.removeItem('donalds_admin_user');
+    location.reload();
+  };
+
+  // Verifica se já estava logado
+  const userSalvo = localStorage.getItem('donalds_admin_user');
+  if (userSalvo && USUARIOS[userSalvo]) {
+    entrarAdmin(userSalvo);
+  }
 
   // ABAS
   window.abrirAba = (aba, btn) => {
