@@ -177,7 +177,7 @@
     <div id="aba-cardapio" class="hidden">
       <div class="sec-titulo">
         Cardápio
-        <button class="btn-prim" onclick="abrirModalItem()">+ Novo item</button>
+        <button class="btn-prim" id="btn-novo-item">+ Novo item</button>
       </div>
       <div class="tabela-wrap">
         <table>
@@ -191,7 +191,7 @@
     <div id="aba-estoque" class="hidden">
       <div class="sec-titulo">
         Estoque
-        <button class="btn-prim" onclick="abrirModalEstoque()">+ Novo ingrediente</button>
+        <button class="btn-prim" id="btn-novo-ingrediente">+ Novo ingrediente</button>
       </div>
       <div class="tabela-wrap">
         <table>
@@ -241,7 +241,7 @@
       <!-- NOVA ENTRADA -->
       <div class="sec-titulo" style="margin-bottom:14px">
         Registrar entrada
-        <button class="btn-prim" onclick="abrirModalEntrada()">+ Nova entrada</button>
+        <button class="btn-prim" id="btn-nova-entrada">+ Nova entrada</button>
       </div>
 
       <!-- HISTÓRICO -->
@@ -597,6 +597,14 @@
     entrarAdmin(userSalvo);
   }
 
+  // Event listeners seguros (evita problema de escopo do type="module")
+  document.addEventListener('click', e => {
+    const id = e.target.id;
+    if (id === 'btn-novo-item') window.abrirModalItem();
+    if (id === 'btn-novo-ingrediente') window.abrirModalEstoque();
+    if (id === 'btn-nova-entrada') window.abrirModalEntrada();
+  });
+
   // ABAS
   window.abrirAba = (aba, btn) => {
     document.querySelectorAll('[id^="aba-"]').forEach(el => el.classList.add('hidden'));
@@ -661,19 +669,22 @@
   }
 
   window.abrirModalItem = async () => {
-    itemEditandoId = null; fotoAtualUrl = null; receitaAtual = [];
-    await carregarEstoqueCache();
-    document.getElementById('modal-item-titulo').textContent = 'NOVO ITEM';
-    document.getElementById('item-nome').value = '';
-    document.getElementById('item-desc').value = '';
-    document.getElementById('item-preco').value = '';
-    document.getElementById('item-emoji').value = '🍔';
-    document.getElementById('item-badge').value = '';
-    document.getElementById('item-status').value = 'true';
-    document.getElementById('item-foto-url').value = '';
-    document.getElementById('foto-preview-wrap').style.display = 'none';
-    renderReceita();
-    document.getElementById('modal-item').classList.remove('hidden');
+    try {
+      itemEditandoId = null; fotoAtualUrl = null; receitaAtual = [];
+      await carregarEstoqueCache();
+      document.getElementById('modal-item-titulo').textContent = 'NOVO ITEM';
+      document.getElementById('item-nome').value = '';
+      document.getElementById('item-desc').value = '';
+      document.getElementById('item-preco').value = '';
+      document.getElementById('item-emoji').value = '🍔';
+      document.getElementById('item-badge').value = '';
+      document.getElementById('item-cat').value = 'classicos';
+      document.getElementById('item-status').value = 'true';
+      document.getElementById('item-foto-url').value = '';
+      document.getElementById('foto-preview-wrap').style.display = 'none';
+      renderReceita();
+      document.getElementById('modal-item').classList.remove('hidden');
+    } catch(e) { console.error('Erro abrirModalItem:', e); alert('Erro ao abrir formulário: ' + e.message); }
   };
 
   window._editarItem = async id => {
