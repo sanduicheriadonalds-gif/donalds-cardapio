@@ -82,6 +82,15 @@
   .campo-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .foto-preview{width:80px;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border)}
   .foto-preview-wrap{display:flex;align-items:center;gap:12px;margin-top:8px}
+  .receita-lista{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+  .receita-item{display:flex;align-items:center;gap:8px;background:#f8f8f8;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+  .receita-item-nome{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+  .receita-item-qtd{width:70px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;font-family:'Inter',sans-serif;outline:none}
+  .receita-item-unid{font-size:11px;color:var(--muted);min-width:24px}
+  .receita-item-del{background:none;border:none;color:#dc2626;cursor:pointer;font-size:18px;line-height:1}
+  .receita-add-row{display:flex;gap:8px;align-items:center}
+  .receita-add-row select{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:#fff;color:var(--text);outline:none}
+  .receita-vazio{font-size:12px;color:var(--muted);text-align:center;padding:12px;border:1px dashed var(--border);border-radius:8px}
   .modal-footer{display:flex;gap:10px;margin-top:20px}
   .modal-footer .btn-prim{flex:1;padding:13px;font-size:14px}
   .hidden{display:none!important}
@@ -267,6 +276,15 @@
         <option value="false">Inativo (oculto)</option>
       </select>
     </div>
+    <div class="campo">
+      <label>Ingredientes da receita</label>
+      <div class="receita-lista" id="receita-lista"></div>
+      <div class="receita-add-row">
+        <select id="receita-select"><option value="">Selecione um ingrediente...</option></select>
+        <button class="btn-sec" style="white-space:nowrap;padding:8px 12px" onclick="adicionarIngrediente()">+ Adicionar</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Cadastre os ingredientes primeiro na aba Estoque, depois vincule aqui.</div>
+    </div>
     <div class="modal-footer">
       <button class="btn-sec" onclick="fecharModal('modal-item')">Cancelar</button>
       <button class="btn-prim" id="btn-salvar-item" onclick="salvarItem()">Salvar item</button>
@@ -328,8 +346,69 @@
   const NUM_MESAS = 35;
   const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html','') + 'cardapio.html';
 
-  let itemEditandoId = null;
-  let fotoAtualUrl = null;
+  let receitaAtual = []; // [{id, nome, quantidade, unidade}]
+  let estoqueCache = [];
+
+  async function carregarEstoqueCache() {
+    const snap = await getDocs(collection(db,'estoque'));
+    estoqueCache = snap.docs.map(d => ({id:d.id,...d.data()}));
+  }
+
+  function renderReceita() {
+    const lista = document.getElementById('receita-lista');
+    if (!receitaAtual.length) {
+      lista.innerHTML = '<div class="receita-vazio">Nenhum ingrediente adicionado ainda</div>';
+    } else {
+      lista.innerHTML = receitaAtual.map((it,i) => `
+        <div class="receita-item">
+          <span class="receita-item-nome">${it.nome}</span>
+          <input class="receita-item-qtd" type="number" step="0.1" min="0" value="${it.quantidade}" onchange="window._updateQtdReceita(${i}, this.value)" placeholder="Qtd"/>
+          <span class="receita-item-unid">${it.unidade}</span>
+          <button class="receita-item-del" onclick="window._removerReceita(${i})">×</button>
+        </div>`).join('');
+    }
+    // Atualiza select removendo já adicionados
+    const sel = document.getElementById('receita-select');
+    const jaAdicionados = receitaAtual.map(x => x.id);
+    sel.innerHTML = '<option value="">Selecione um ingrediente...</option>' +
+      estoqueCache.filter(e => !jaAdicionados.includes(e.id))
+        .map(e => `<option value="${e.id}">${e.nome} (${e.unidade})</option>`).join('');
+  }
+
+  window.adicionarIngrediente = () => {
+    const sel = document.getElementById('receita-select');
+    const id = sel.value;
+    if (!id) return;
+    const ing = estoqueCache.find(e => e.id === id);
+    if (!ing) return;
+    receitaAtual.push({id: ing.id, nome: ing.nome, quantidade: 1, unidade: ing.unidade});
+    renderReceita();
+  };
+
+  window._updateQtdReceita = (i, val) => { receitaAtual[i].quantidade = parseFloat(val) || 0; };
+  window._removerReceita = i => { receitaAtual.splice(i,1); renderReceita(); };
+
+  // Descontar estoque quando pedido chega
+  async function descontarEstoque(itensPedido) {
+    try {
+      const snapC = await getDocs(collection(db,'cardapio'));
+      const cardapioMap = {};
+      snapC.docs.forEach(d => { cardapioMap[d.id] = d.data(); });
+      const snapE = await getDocs(collection(db,'estoque'));
+      const estoqueMap = {};
+      snapE.docs.forEach(d => { estoqueMap[d.id] = {ref: doc(db,'estoque',d.id), ...d.data()}; });
+      for (const itemPedido of itensPedido) {
+        const cardItem = cardapioMap[itemPedido.id];
+        if (!cardItem || !cardItem.receita) continue;
+        for (const ing of cardItem.receita) {
+          const est = estoqueMap[ing.id];
+          if (!est) continue;
+          const novaQtd = Math.max(0, (est.quantidade || 0) - (ing.quantidade * itemPedido.quantidade));
+          await updateDoc(est.ref, { quantidade: novaQtd });
+        }
+      }
+    } catch(e) { console.error('Erro ao descontar estoque:', e); }
+  }
 
   // LOGIN
   window.fazerLogin = () => {
@@ -406,8 +485,9 @@
     }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">Nenhum item cadastrado.</td></tr>';
   }
 
-  window.abrirModalItem = () => {
-    itemEditandoId = null; fotoAtualUrl = null;
+  window.abrirModalItem = async () => {
+    itemEditandoId = null; fotoAtualUrl = null; receitaAtual = [];
+    await carregarEstoqueCache();
     document.getElementById('modal-item-titulo').textContent = 'NOVO ITEM';
     document.getElementById('item-nome').value = '';
     document.getElementById('item-desc').value = '';
@@ -417,15 +497,18 @@
     document.getElementById('item-status').value = 'true';
     document.getElementById('item-foto-url').value = '';
     document.getElementById('foto-preview-wrap').style.display = 'none';
+    renderReceita();
     document.getElementById('modal-item').classList.remove('hidden');
   };
 
   window._editarItem = async id => {
+    await carregarEstoqueCache();
     const snap = await getDocs(collection(db,'cardapio'));
     const d = snap.docs.find(x => x.id === id);
     if (!d) return;
     const it = d.data();
     itemEditandoId = id; fotoAtualUrl = it.foto || null;
+    receitaAtual = it.receita ? [...it.receita] : [];
     document.getElementById('modal-item-titulo').textContent = 'EDITAR ITEM';
     document.getElementById('item-nome').value = it.nome || '';
     document.getElementById('item-desc').value = it.descricao || '';
@@ -441,6 +524,7 @@
     } else {
       document.getElementById('foto-preview-wrap').style.display = 'none';
     }
+    renderReceita();
     document.getElementById('modal-item').classList.remove('hidden');
   };
 
@@ -475,6 +559,7 @@
         emoji: document.getElementById('item-emoji').value || '🍔',
         ativo: document.getElementById('item-status').value === 'true',
         foto: fotoUrl,
+        receita: receitaAtual,
         ordem: snap.size + 1,
       };
       if (itemEditandoId) {
@@ -566,6 +651,13 @@
 
   window._updateStatus = async (id, status) => {
     await updateDoc(doc(db,'pedidos',id), { status });
+    if (status === 'preparo') {
+      const snap = await getDocs(collection(db,'pedidos'));
+      const pedido = snap.docs.find(d => d.id === id);
+      if (pedido && pedido.data().itens) {
+        await descontarEstoque(pedido.data().itens);
+      }
+    }
     carregarPedidos();
   };
 
