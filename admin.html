@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin — Donalds'</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--azul:#0d2654;--azul2:#1a3a6b;--ouro:#f5c518;--bg:#f4f4f0;--card:#fff;--text:#1a1a1a;--muted:#888;--border:#e8e8e0;--radius:12px;--danger:#dc2626;--success:#16a34a}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+
+  /* LOGIN */
+  #tela-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--azul)}
+  .login-box{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:360px;text-align:center}
+  .login-logo{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--azul);letter-spacing:3px;margin-bottom:4px}
+  .login-sub{font-size:12px;color:var(--muted);letter-spacing:4px;margin-bottom:28px}
+  .login-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;color:var(--text);margin-bottom:12px;transition:border-color .2s}
+  .login-input:focus{border-color:var(--azul)}
+  .login-btn{width:100%;padding:14px;background:var(--azul);color:var(--ouro);border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:opacity .2s}
+  .login-btn:hover{opacity:.9}
+  .login-erro{color:var(--danger);font-size:12px;margin-top:8px;display:none}
+
+  /* ADMIN LAYOUT */
+  #tela-admin{display:none}
+  .adm-header{background:var(--azul);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .adm-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:3px}
+  .adm-logo span{color:var(--ouro)}
+  .adm-user{font-size:12px;color:rgba(255,255,255,.5)}
+  .sair-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+  .sair-btn:hover{border-color:var(--ouro);color:var(--ouro)}
+  .adm-nav{background:#fff;border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 20px;gap:4px}
+  .adm-nav::-webkit-scrollbar{display:none}
+  .nav-btn{padding:14px 20px;border:none;background:none;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;font-family:'Inter',sans-serif;transition:all .2s}
+  .nav-btn.ativo{color:var(--azul);border-bottom-color:var(--ouro)}
+  .adm-body{padding:20px;max-width:1100px;margin:0 auto}
+
+  /* CARDS MÉTRICAS */
+  .metricas{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+  .metrica{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:16px}
+  .metrica-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+  .metrica-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--azul);letter-spacing:1px}
+  .metrica-sub{font-size:11px;color:var(--success);margin-top:2px}
+
+  /* SEÇÃO */
+  .sec-titulo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul);letter-spacing:2px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+  .btn-prim{padding:10px 20px;background:var(--azul);color:var(--ouro);border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .2s}
+  .btn-prim:hover{opacity:.88}
+  .btn-sec{padding:8px 16px;background:transparent;color:var(--azul);border:1.5px solid var(--azul);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+  .btn-sec:hover{background:var(--azul);color:var(--ouro)}
+  .btn-danger{padding:8px 14px;background:transparent;color:var(--danger);border:1.5px solid var(--danger);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+  .btn-danger:hover{background:var(--danger);color:#fff}
+
+  /* TABELA */
+  .tabela-wrap{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:20px}
+  table{width:100%;border-collapse:collapse}
+  th{padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;background:#fafaf8;border-bottom:1px solid var(--border)}
+  td{padding:12px 16px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#fafaf8}
+  .item-foto-mini{width:48px;height:48px;border-radius:8px;object-fit:cover;background:var(--azul);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .item-foto-mini img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+  .tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .tag-ativo{background:#dcfce7;color:#15803d}
+  .tag-inativo{background:#fee2e2;color:#b91c1c}
+  .tag-hot{background:#fde8e8;color:#b91c1c}
+  .tag-new{background:#e0f2fe;color:#0369a1}
+  .tag-dest{background:#fef9c3;color:#854d0e}
+  .estoque-ok{color:var(--success);font-weight:600}
+  .estoque-baixo{color:#d97706;font-weight:600}
+  .estoque-critico{color:var(--danger);font-weight:600}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:999;padding:16px}
+  .modal{background:#fff;border-radius:20px 20px 16px 16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:24px}
+  .modal-titulo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul);letter-spacing:2px;margin-bottom:20px}
+  .campo{margin-bottom:14px}
+  .campo label{display:block;font-size:12px;font-weight:700;color:var(--azul);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .campo input,.campo select,.campo textarea{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;color:var(--text);outline:none;background:#fff;transition:border-color .2s}
+  .campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--azul)}
+  .campo-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative}
+  .upload-area:hover{border-color:var(--azul)}
+  .upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .upload-preview{width:80px;height:80px;border-radius:10px;object-fit:cover;margin:0 auto 8px;display:block}
+  .upload-txt{font-size:13px;color:var(--muted)}
+  .upload-icon{font-size:28px;margin-bottom:6px}
+  .modal-footer{display:flex;gap:10px;margin-top:20px}
+  .modal-footer .btn-prim{flex:1;padding:13px;font-size:14px}
+  .hidden{display:none!important}
+  .loading-inline{color:var(--muted);font-size:13px;padding:20px;text-align:center}
+
+  /* PEDIDOS AO VIVO */
+  .pedidos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:20px}
+  .pedido-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+  .pedido-card-head{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+  .pedido-num{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--azul);letter-spacing:1px}
+  .pedido-mesa{font-size:12px;color:var(--muted)}
+  .pedido-status{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+  .status-novo{background:#fef9c3;color:#854d0e}
+  .status-preparo{background:#dbeafe;color:#1e40af}
+  .status-pronto{background:#dcfce7;color:#15803d}
+  .pedido-itens{padding:12px 16px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border)}
+  .pedido-footer{padding:10px 16px;display:flex;justify-content:space-between;align-items:center}
+  .pedido-total{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--azul)}
+  .pedido-acoes{display:flex;gap:6px}
+  .btn-status{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:none;cursor:pointer;font-family:'Inter',sans-serif}
+  .btn-preparo{background:#dbeafe;color:#1e40af}
+  .btn-pronto{background:#dcfce7;color:#15803d}
+
+  @media(max-width:600px){
+    .adm-body{padding:12px}
+    .metricas{grid-template-columns:1fr 1fr}
+    .campo-row{grid-template-columns:1fr}
+    table{font-size:12px}
+    td,th{padding:8px 10px}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="tela-login">
+  <div class="login-box">
+    <div class="login-logo">DONALDS'</div>
+    <div class="login-sub">PAINEL ADMIN</div>
+    <input class="login-input" type="text" id="login-user" placeholder="Usuário"/>
+    <input class="login-input" type="password" id="login-senha" placeholder="Senha" onkeydown="if(event.key==='Enter')fazerLogin()"/>
+    <button class="login-btn" onclick="fazerLogin()">ENTRAR</button>
+    <div class="login-erro" id="login-erro">Usuário ou senha incorretos.</div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="tela-admin">
+  <div class="adm-header">
+    <div class="adm-logo">DONALDS' <span>ADMIN</span></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="adm-user" id="adm-user-nome">admin</div>
+      <button class="sair-btn" onclick="sair()">Sair</button>
+    </div>
+  </div>
+  <div class="adm-nav">
+    <button class="nav-btn ativo" onclick="abrirAba('dashboard',this)">Dashboard</button>
+    <button class="nav-btn" onclick="abrirAba('cardapio',this)">Cardápio</button>
+    <button class="nav-btn" onclick="abrirAba('estoque',this)">Estoque</button>
+    <button class="nav-btn" onclick="abrirAba('pedidos',this)">Pedidos ao vivo</button>
+    <button class="nav-btn" onclick="abrirAba('financeiro',this)">Financeiro</button>
+    <button class="nav-btn" onclick="abrirAba('qrcodes',this)">QR Codes</button>
+  </div>
+  <div class="adm-body">
+
+    <!-- DASHBOARD -->
+    <div id="aba-dashboard">
+      <div class="metricas">
+        <div class="metrica"><div class="metrica-label">Vendas hoje</div><div class="metrica-val" id="m-vendas">R$ 0</div><div class="metrica-sub" id="m-vendas-sub">carregando...</div></div>
+        <div class="metrica"><div class="metrica-label">Pedidos hoje</div><div class="metrica-val" id="m-pedidos">0</div></div>
+        <div class="metrica"><div class="metrica-label">Ticket médio</div><div class="metrica-val" id="m-ticket">R$ 0</div></div>
+        <div class="metrica"><div class="metrica-label">Itens no cardápio</div><div class="metrica-val" id="m-itens">0</div></div>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Últimos pedidos</th><th>Mesa</th><th>Total</th><th>Status</th><th>Horário</th></tr></thead>
+          <tbody id="tabela-ultimos"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CARDÁPIO -->
+    <div id="aba-cardapio" class="hidden">
+      <div class="sec-titulo">
+        Cardápio
+        <button class="btn-prim" onclick="abrirModalItem()">+ Novo item</button>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th><th>Status</th><th>Badge</th><th>Ações</th></tr></thead>
+          <tbody id="tabela-cardapio"><tr><td colspan="7" class="loading-inline">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ESTOQUE -->
+    <div id="aba-estoque" class="hidden">
+      <div class="sec-titulo">
+        Estoque
+        <button class="btn-prim" onclick="abrirModalEstoque()">+ Novo ingrediente</button>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Ingrediente</th><th>Unidade</th><th>Quantidade</th><th>Mínimo</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tabela-estoque"><tr><td colspan="6" class="loading-inline">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PEDIDOS AO VIVO -->
+    <div id="aba-pedidos" class="hidden">
+      <div class="sec-titulo">Pedidos ao vivo <button class="btn-sec" onclick="carregarPedidos()">Atualizar</button></div>
+      <div class="pedidos-grid" id="pedidos-grid"><div class="loading-inline">Carregando pedidos...</div></div>
+    </div>
+
+    <!-- FINANCEIRO -->
+    <div id="aba-financeiro" class="hidden">
+      <div class="metricas">
+        <div class="metrica"><div class="metrica-label">Total do mês</div><div class="metrica-val" id="f-mes">R$ 0</div></div>
+        <div class="metrica"><div class="metrica-label">Total da semana</div><div class="metrica-val" id="f-semana">R$ 0</div></div>
+        <div class="metrica"><div class="metrica-label">Pedidos no mês</div><div class="metrica-val" id="f-pedidos">0</div></div>
+        <div class="metrica"><div class="metrica-label">Ticket médio mês</div><div class="metrica-val" id="f-ticket">R$ 0</div></div>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Data</th><th>Mesa</th><th>Itens</th><th>Pagamento</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="tabela-financeiro"><tr><td colspan="6" class="loading-inline">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- QR CODES -->
+    <div id="aba-qrcodes" class="hidden">
+      <div class="sec-titulo">QR Codes das mesas</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Imprima e cole em cada mesa. O cliente escaneia e abre o cardápio diretamente.</p>
+      <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL ITEM -->
+<div class="modal-overlay hidden" id="modal-item">
+  <div class="modal">
+    <div class="modal-titulo" id="modal-item-titulo">NOVO ITEM</div>
+    <div class="campo"><label>Nome do item</label><input type="text" id="item-nome" placeholder="Ex: Smash clássico"/></div>
+    <div class="campo"><label>Descrição</label><textarea id="item-desc" rows="2" placeholder="Ingredientes e detalhes..."></textarea></div>
+    <div class="campo-row">
+      <div class="campo"><label>Preço (R$)</label><input type="number" id="item-preco" step="0.01" placeholder="0,00"/></div>
+      <div class="campo"><label>Categoria</label>
+        <select id="item-cat">
+          <option value="classicos">Clássicos</option>
+          <option value="especiais">Especiais</option>
+          <option value="combos">Combos</option>
+          <option value="bebidas">Bebidas</option>
+        </select>
+      </div>
+    </div>
+    <div class="campo-row">
+      <div class="campo"><label>Badge</label>
+        <select id="item-badge">
+          <option value="">Nenhum</option>
+          <option value="new">Novo</option>
+          <option value="hot">Quente</option>
+          <option value="dest">Destaque</option>
+        </select>
+      </div>
+      <div class="campo"><label>Emoji (fallback)</label><input type="text" id="item-emoji" placeholder="🍔"/></div>
+    </div>
+    <div class="campo"><label>Foto do produto</label>
+      <div class="upload-area" id="upload-area">
+        <input type="file" accept="image/*" id="item-foto-input" onchange="previewFoto(this)"/>
+        <div id="upload-preview-wrap">
+          <div class="upload-icon">📷</div>
+          <div class="upload-txt">Toque para selecionar a foto<br><small>JPG, PNG ou WEBP — máx. 2MB</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="campo"><label>Status</label>
+      <select id="item-status">
+        <option value="true">Ativo (visível no cardápio)</option>
+        <option value="false">Inativo (oculto)</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-item')">Cancelar</button>
+      <button class="btn-prim" id="btn-salvar-item" onclick="salvarItem()">Salvar item</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ESTOQUE -->
+<div class="modal-overlay hidden" id="modal-estoque">
+  <div class="modal">
+    <div class="modal-titulo">INGREDIENTE</div>
+    <div class="campo"><label>Nome do ingrediente</label><input type="text" id="est-nome" placeholder="Ex: Carne bovina (blend)"/></div>
+    <div class="campo-row">
+      <div class="campo"><label>Quantidade atual</label><input type="number" id="est-qtd" step="0.1" placeholder="0"/></div>
+      <div class="campo"><label>Unidade</label>
+        <select id="est-unidade">
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+          <option value="un">unidades</option>
+          <option value="L">litros</option>
+          <option value="ml">ml</option>
+          <option value="pacote">pacote</option>
+        </select>
+      </div>
+    </div>
+    <div class="campo"><label>Quantidade mínima (alerta)</label><input type="number" id="est-min" step="0.1" placeholder="Ex: 2"/></div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-estoque')">Cancelar</button>
+      <button class="btn-prim" onclick="salvarEstoque()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
+    authDomain: "donals-e00f4.firebaseapp.com",
+    projectId: "donals-e00f4",
+    storageBucket: "donals-e00f4.firebasestorage.app",
+    messagingSenderId: "391280941743",
+    appId: "1:391280941743:web:1f9db3a7dc69896b0c125a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  // CREDENCIAIS ADMIN — altere aqui
+  const USUARIOS = {
+    'admin': 'donalds2024',
+    'gerente': 'gerente123'
+  };
+
+  const NUM_MESAS = 35;
+  const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html','') + 'cardapio.html';
+
+  let itemEditandoId = null;
+  let fotoFile = null;
+  let fotoAtualUrl = null;
+
+  // LOGIN
+  window.fazerLogin = () => {
+    const user = document.getElementById('login-user').value.trim();
+    const senha = document.getElementById('login-senha').value;
+    if (USUARIOS[user] && USUARIOS[user] === senha) {
+      document.getElementById('tela-login').style.display = 'none';
+      document.getElementById('tela-admin').style.display = 'block';
+      document.getElementById('adm-user-nome').textContent = user;
+      carregarDashboard();
+    } else {
+      document.getElementById('login-erro').style.display = 'block';
+    }
+  };
+  window.sair = () => { location.reload(); };
+
+  // ABAS
+  window.abrirAba = (aba, btn) => {
+    document.querySelectorAll('[id^="aba-"]').forEach(el => el.classList.add('hidden'));
+    document.getElementById('aba-' + aba).classList.remove('hidden');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    if (aba === 'cardapio') carregarCardapio();
+    if (aba === 'estoque') carregarEstoque();
+    if (aba === 'pedidos') carregarPedidos();
+    if (aba === 'financeiro') carregarFinanceiro();
+    if (aba === 'qrcodes') renderQRCodes();
+    if (aba === 'dashboard') carregarDashboard();
+  };
+
+  // DASHBOARD
+  async function carregarDashboard() {
+    try {
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      const snap = await getDocs(query(collection(db,'pedidos'), orderBy('criadoEm','desc')));
+      const todos = snap.docs.map(d => ({id:d.id,...d.data()}));
+      const pedidosHoje = todos.filter(p => p.criadoEm && p.criadoEm.toDate() >= hoje);
+      const totalHoje = pedidosHoje.reduce((a,p) => a + (p.total||0), 0);
+      const ticket = pedidosHoje.length ? totalHoje / pedidosHoje.length : 0;
+      document.getElementById('m-vendas').textContent = 'R$ ' + totalHoje.toFixed(0);
+      document.getElementById('m-pedidos').textContent = pedidosHoje.length;
+      document.getElementById('m-ticket').textContent = 'R$ ' + ticket.toFixed(0);
+      const snapC = await getDocs(collection(db,'cardapio'));
+      document.getElementById('m-itens').textContent = snapC.size;
+      const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+      const fmtDt = ts => ts ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
+      const statusTag = s => s==='novo'?'<span class="tag tag-dest">Novo</span>':s==='preparo'?'<span class="tag" style="background:#dbeafe;color:#1e40af">Preparo</span>':'<span class="tag tag-ativo">Pronto</span>';
+      document.getElementById('tabela-ultimos').innerHTML = todos.slice(0,8).map(p =>
+        `<tr><td>#${p.id.slice(-4).toUpperCase()}</td><td>Mesa ${p.mesa}</td><td>${fmt(p.total||0)}</td><td>${statusTag(p.status)}</td><td>${fmtDt(p.criadoEm)}</td></tr>`
+      ).join('') || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px">Nenhum pedido ainda.</td></tr>';
+    } catch(e) { console.error(e); }
+  }
+
+  // CARDÁPIO
+  async function carregarCardapio() {
+    const snap = await getDocs(query(collection(db,'cardapio'), orderBy('ordem')));
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const badgeTag = b => b==='hot'?'<span class="tag tag-hot">quente</span>':b==='new'?'<span class="tag tag-new">novo</span>':b==='dest'?'<span class="tag tag-dest">destaque</span>':'—';
+    document.getElementById('tabela-cardapio').innerHTML = snap.docs.map(d => {
+      const it = {id:d.id,...d.data()};
+      const img = it.foto ? `<img src="${it.foto}" style="width:48px;height:48px;border-radius:8px;object-fit:cover"/>` : `<div style="width:48px;height:48px;border-radius:8px;background:#0d2654;display:flex;align-items:center;justify-content:center;font-size:22px">${it.emoji||'🍔'}</div>`;
+      return `<tr>
+        <td>${img}</td>
+        <td><strong>${it.nome}</strong></td>
+        <td>${it.categoria}</td>
+        <td>${fmt(it.preco)}</td>
+        <td><span class="tag ${it.ativo!==false?'tag-ativo':'tag-inativo'}">${it.ativo!==false?'Ativo':'Inativo'}</span></td>
+        <td>${badgeTag(it.badge)}</td>
+        <td><div style="display:flex;gap:6px">
+          <button class="btn-sec" onclick="window._editarItem('${it.id}')">Editar</button>
+          <button class="btn-danger" onclick="window._deletarItem('${it.id}')">Excluir</button>
+        </div></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">Nenhum item cadastrado.</td></tr>';
+  }
+
+  window.abrirModalItem = () => {
+    itemEditandoId = null; fotoFile = null; fotoAtualUrl = null;
+    document.getElementById('modal-item-titulo').textContent = 'NOVO ITEM';
+    document.getElementById('item-nome').value = '';
+    document.getElementById('item-desc').value = '';
+    document.getElementById('item-preco').value = '';
+    document.getElementById('item-emoji').value = '🍔';
+    document.getElementById('item-badge').value = '';
+    document.getElementById('item-status').value = 'true';
+    document.getElementById('upload-preview-wrap').innerHTML = '<div class="upload-icon">📷</div><div class="upload-txt">Toque para selecionar a foto<br><small>JPG, PNG ou WEBP — máx. 2MB</small></div>';
+    document.getElementById('modal-item').classList.remove('hidden');
+  };
+
+  window._editarItem = async id => {
+    const snap = await getDocs(collection(db,'cardapio'));
+    const d = snap.docs.find(x => x.id === id);
+    if (!d) return;
+    const it = d.data();
+    itemEditandoId = id; fotoAtualUrl = it.foto || null; fotoFile = null;
+    document.getElementById('modal-item-titulo').textContent = 'EDITAR ITEM';
+    document.getElementById('item-nome').value = it.nome || '';
+    document.getElementById('item-desc').value = it.descricao || '';
+    document.getElementById('item-preco').value = it.preco || '';
+    document.getElementById('item-cat').value = it.categoria || 'classicos';
+    document.getElementById('item-badge').value = it.badge || '';
+    document.getElementById('item-emoji').value = it.emoji || '🍔';
+    document.getElementById('item-status').value = it.ativo !== false ? 'true' : 'false';
+    if (it.foto) {
+      document.getElementById('upload-preview-wrap').innerHTML = `<img src="${it.foto}" class="upload-preview"/><div class="upload-txt">Toque para trocar a foto</div>`;
+    }
+    document.getElementById('modal-item').classList.remove('hidden');
+  };
+
+  window._deletarItem = async id => {
+    if (!confirm('Excluir este item?')) return;
+    await deleteDoc(doc(db,'cardapio',id));
+    carregarCardapio();
+  };
+
+  window.previewFoto = input => {
+    if (!input.files[0]) return;
+    fotoFile = input.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('upload-preview-wrap').innerHTML = `<img src="${e.target.result}" class="upload-preview"/><div class="upload-txt">Toque para trocar</div>`;
+    };
+    reader.readAsDataURL(fotoFile);
+  };
+
+  window.salvarItem = async () => {
+    const btn = document.getElementById('btn-salvar-item');
+    btn.textContent = 'Salvando...'; btn.disabled = true;
+    try {
+      let fotoUrl = fotoAtualUrl;
+      if (fotoFile) {
+        const ref = storageRef(storage, `cardapio/${Date.now()}_${fotoFile.name}`);
+        await uploadBytes(ref, fotoFile);
+        fotoUrl = await getDownloadURL(ref);
+      }
+      const snap = await getDocs(collection(db,'cardapio'));
+      const dados = {
+        nome: document.getElementById('item-nome').value,
+        descricao: document.getElementById('item-desc').value,
+        preco: parseFloat(document.getElementById('item-preco').value) || 0,
+        categoria: document.getElementById('item-cat').value,
+        badge: document.getElementById('item-badge').value,
+        emoji: document.getElementById('item-emoji').value || '🍔',
+        ativo: document.getElementById('item-status').value === 'true',
+        foto: fotoUrl || null,
+        ordem: snap.size + 1,
+      };
+      if (itemEditandoId) {
+        await updateDoc(doc(db,'cardapio',itemEditandoId), dados);
+      } else {
+        await addDoc(collection(db,'cardapio'), dados);
+      }
+      fecharModal('modal-item');
+      carregarCardapio();
+    } catch(e) { alert('Erro ao salvar: ' + e.message); }
+    btn.textContent = 'Salvar item'; btn.disabled = false;
+  };
+
+  // ESTOQUE
+  async function carregarEstoque() {
+    const snap = await getDocs(collection(db,'estoque'));
+    document.getElementById('tabela-estoque').innerHTML = snap.docs.map(d => {
+      const it = {id:d.id,...d.data()};
+      const pct = it.minimo > 0 ? it.quantidade / it.minimo : 99;
+      const st = pct <= 0 ? '<span class="estoque-critico">Zerado</span>' : pct < 1 ? '<span class="estoque-critico">Crítico</span>' : pct < 2 ? '<span class="estoque-baixo">Baixo</span>' : '<span class="estoque-ok">OK</span>';
+      return `<tr>
+        <td><strong>${it.nome}</strong></td>
+        <td>${it.unidade}</td>
+        <td>${Number(it.quantidade).toFixed(1)}</td>
+        <td>${Number(it.minimo).toFixed(1)}</td>
+        <td>${st}</td>
+        <td><div style="display:flex;gap:6px">
+          <button class="btn-sec" onclick="window._ajustarEstoque('${it.id}','${it.nome}',${it.quantidade})">Ajustar</button>
+          <button class="btn-danger" onclick="window._deletarEstoque('${it.id}')">Excluir</button>
+        </div></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">Nenhum ingrediente cadastrado.</td></tr>';
+  }
+
+  window.abrirModalEstoque = () => {
+    document.getElementById('est-nome').value = '';
+    document.getElementById('est-qtd').value = '';
+    document.getElementById('est-min').value = '';
+    document.getElementById('modal-estoque').classList.remove('hidden');
+  };
+
+  window.salvarEstoque = async () => {
+    await addDoc(collection(db,'estoque'), {
+      nome: document.getElementById('est-nome').value,
+      quantidade: parseFloat(document.getElementById('est-qtd').value) || 0,
+      minimo: parseFloat(document.getElementById('est-min').value) || 0,
+      unidade: document.getElementById('est-unidade').value,
+    });
+    fecharModal('modal-estoque');
+    carregarEstoque();
+  };
+
+  window._ajustarEstoque = async (id, nome, atual) => {
+    const nova = prompt(`Quantidade atual de "${nome}": ${atual}\nDigite a nova quantidade:`, atual);
+    if (nova === null) return;
+    await updateDoc(doc(db,'estoque',id), { quantidade: parseFloat(nova) || 0 });
+    carregarEstoque();
+  };
+
+  window._deletarEstoque = async id => {
+    if (!confirm('Excluir ingrediente?')) return;
+    await deleteDoc(doc(db,'estoque',id));
+    carregarEstoque();
+  };
+
+  // PEDIDOS
+  window.carregarPedidos = async () => {
+    const snap = await getDocs(query(collection(db,'pedidos'), orderBy('criadoEm','desc')));
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const ativos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p => p.status !== 'entregue').slice(0,20);
+    document.getElementById('pedidos-grid').innerHTML = ativos.length ? ativos.map(p => {
+      const itensStr = (p.itens||[]).map(i=>`${i.quantidade}x ${i.nome}`).join(', ');
+      const stTag = p.status==='novo'?'<span class="pedido-status status-novo">Novo</span>':p.status==='preparo'?'<span class="pedido-status status-preparo">Em preparo</span>':'<span class="pedido-status status-pronto">Pronto</span>';
+      const acoes = p.status==='novo'
+        ? `<button class="btn-status btn-preparo" onclick="window._updateStatus('${p.id}','preparo')">Iniciar preparo</button>`
+        : p.status==='preparo'
+        ? `<button class="btn-status btn-pronto" onclick="window._updateStatus('${p.id}','pronto')">Marcar pronto</button>`
+        : `<button class="btn-status" style="background:#f0f0f0;color:#555" onclick="window._updateStatus('${p.id}','entregue')">Entregue</button>`;
+      return `<div class="pedido-card">
+        <div class="pedido-card-head">
+          <div><div class="pedido-num">#${p.id.slice(-4).toUpperCase()}</div><div class="pedido-mesa">Mesa ${p.mesa} · ${p.pagamento||'—'}</div></div>
+          ${stTag}
+        </div>
+        <div class="pedido-itens">${itensStr}</div>
+        <div class="pedido-footer"><span class="pedido-total">${fmt(p.total||0)}</span><div class="pedido-acoes">${acoes}</div></div>
+      </div>`;
+    }).join('') : '<div style="color:#aaa;font-size:13px;padding:20px">Nenhum pedido ativo.</div>';
+  };
+
+  window._updateStatus = async (id, status) => {
+    await updateDoc(doc(db,'pedidos',id), { status });
+    carregarPedidos();
+  };
+
+  // FINANCEIRO
+  async function carregarFinanceiro() {
+    const snap = await getDocs(query(collection(db,'pedidos'), orderBy('criadoEm','desc')));
+    const todos = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const agora = new Date();
+    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+    const inicioSemana = new Date(agora); inicioSemana.setDate(agora.getDate() - agora.getDay());
+    const doMes = todos.filter(p => p.criadoEm && p.criadoEm.toDate() >= inicioMes);
+    const daSemana = todos.filter(p => p.criadoEm && p.criadoEm.toDate() >= inicioSemana);
+    const totalMes = doMes.reduce((a,p) => a+(p.total||0), 0);
+    const totalSemana = daSemana.reduce((a,p) => a+(p.total||0), 0);
+    const ticketMes = doMes.length ? totalMes/doMes.length : 0;
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const fmtDt = ts => ts ? ts.toDate().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '--';
+    document.getElementById('f-mes').textContent = fmt(totalMes);
+    document.getElementById('f-semana').textContent = fmt(totalSemana);
+    document.getElementById('f-pedidos').textContent = doMes.length;
+    document.getElementById('f-ticket').textContent = fmt(ticketMes);
+    const stTag = s => s==='novo'?'<span class="tag tag-dest">Novo</span>':s==='preparo'?'<span class="tag" style="background:#dbeafe;color:#1e40af">Preparo</span>':s==='pronto'?'<span class="tag tag-ativo">Pronto</span>':'<span class="tag" style="background:#f0f0f0;color:#555">Entregue</span>';
+    document.getElementById('tabela-financeiro').innerHTML = todos.slice(0,50).map(p =>
+      `<tr><td>${fmtDt(p.criadoEm)}</td><td>Mesa ${p.mesa}</td><td>${(p.itens||[]).length} item(s)</td><td>${p.pagamento||'—'}</td><td>${fmt(p.total||0)}</td><td>${stTag(p.status)}</td></tr>`
+    ).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">Sem registros.</td></tr>';
+  }
+
+  // QR CODES
+  function renderQRCodes() {
+    const grid = document.getElementById('qr-grid');
+    grid.innerHTML = Array.from({length: NUM_MESAS}, (_, i) => {
+      const mesa = i + 1;
+      const url = `${BASE_URL}?mesa=${mesa}`;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}&color=0d2654&bgcolor=ffffff`;
+      return `<div style="background:#fff;border:1px solid #e8e8e0;border-radius:12px;padding:16px;text-align:center">
+        <img src="${qrUrl}" width="120" height="120" alt="QR Mesa ${mesa}" style="border-radius:8px"/>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#0d2654;letter-spacing:2px;margin-top:8px">MESA ${mesa}</div>
+        <a href="${qrUrl}" download="mesa-${mesa}.png" style="font-size:11px;color:#888;text-decoration:none;margin-top:4px;display:block">Baixar PNG</a>
+      </div>`;
+    }).join('');
+  }
+
+  window.fecharModal = id => document.getElementById(id).classList.add('hidden');
+</script>
+</body>
+</html>

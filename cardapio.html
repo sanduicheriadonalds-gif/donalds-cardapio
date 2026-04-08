@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Donalds' Sanduicheria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --azul:#0d2654;
+    --azul2:#1a3a6b;
+    --ouro:#f5c518;
+    --ouro2:#e0b000;
+    --bg:#f4f4f0;
+    --card:#ffffff;
+    --text:#1a1a1a;
+    --muted:#888;
+    --border:#e8e8e0;
+    --radius:14px;
+  }
+  body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
+
+  /* HEADER */
+  .header{background:var(--azul);padding:20px 16px 16px;position:sticky;top:0;z-index:100}
+  .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .mesa-tag{background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.3);color:var(--ouro);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;letter-spacing:.5px}
+  .horario{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:.3px}
+  .logo{text-align:center;margin-bottom:14px}
+  .logo-line{width:120px;height:1.5px;background:var(--ouro);margin:0 auto}
+  .logo-nome{font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;letter-spacing:4px;line-height:1;margin:6px 0 4px}
+  .logo-sub{font-size:9px;color:var(--ouro);letter-spacing:7px;font-weight:600}
+  .search{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:25px;padding:9px 16px;display:flex;align-items:center;gap:10px}
+  .search input{background:none;border:none;outline:none;color:#fff;font-size:13px;font-family:'Inter',sans-serif;width:100%}
+  .search input::placeholder{color:rgba(255,255,255,.4)}
+
+  /* CATEGORIAS */
+  .cats-wrap{background:#fff;border-bottom:1px solid var(--border);position:sticky;top:138px;z-index:90}
+  .cats{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;scrollbar-width:none}
+  .cats::-webkit-scrollbar{display:none}
+  .cat{flex-shrink:0;padding:7px 18px;border-radius:25px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;letter-spacing:.3px}
+  .cat.ativo{background:var(--azul);color:var(--ouro);border-color:var(--azul)}
+
+  /* LISTA */
+  .secao-titulo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--azul);padding:20px 16px 10px;border-bottom:2px solid var(--ouro);margin:0 16px 12px}
+  .items{padding:0 16px 16px;display:flex;flex-direction:column;gap:10px}
+  .item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);display:flex;overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
+  .item:hover{border-color:var(--azul);transform:translateY(-1px)}
+  .item-img{width:100px;flex-shrink:0;background:var(--azul);display:flex;align-items:center;justify-content:center;font-size:40px;min-height:100px;position:relative;overflow:hidden}
+  .item-img img{width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0}
+  .item-img .emoji-fallback{font-size:40px;z-index:1}
+  .item-body{padding:12px 14px;flex:1;display:flex;flex-direction:column;justify-content:space-between}
+  .item-nome{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+  .item-desc{font-size:11px;color:var(--muted);line-height:1.45}
+  .item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  .item-preco{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul);letter-spacing:1px}
+  .badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:5px;letter-spacing:.3px}
+  .badge-hot{background:#fde8e8;color:#b91c1c}
+  .badge-new{background:#e0f2fe;color:#0369a1}
+  .badge-dest{background:#fef9c3;color:#854d0e}
+  .add-btn{width:32px;height:32px;border-radius:50%;background:var(--ouro);border:none;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;color:var(--azul);font-weight:700;transition:transform .15s;flex-shrink:0}
+  .add-btn:active{transform:scale(.88)}
+  .qty-ctrl{display:flex;align-items:center;gap:8px}
+  .qty-btn{width:28px;height:28px;border-radius:50%;background:#eef2ff;border:1px solid #c7d2f0;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;color:var(--azul);font-weight:700;transition:background .15s}
+  .qty-btn:hover{background:#dde5ff}
+  .qty-num{font-size:14px;font-weight:700;min-width:18px;text-align:center;color:var(--azul)}
+
+  /* CART BAR */
+  .cart-bar{background:var(--ouro);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;position:sticky;bottom:0;z-index:100;transition:opacity .2s}
+  .cart-bar:hover{opacity:.92}
+  .cart-bar.oculto{display:none}
+  .cart-esq{display:flex;align-items:center;gap:12px}
+  .cart-qtd{background:var(--azul);color:var(--ouro);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .cart-label{color:var(--azul);font-size:13px;font-weight:700;letter-spacing:.3px}
+  .cart-valor{color:var(--azul);font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px}
+
+  /* VAZIO */
+  .vazio{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+
+  /* CHECKOUT */
+  #tela-checkout{display:none}
+  .chk-header{background:var(--azul);padding:16px 20px;display:flex;align-items:center;gap:12px}
+  .chk-voltar{background:none;border:none;color:var(--ouro);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;padding:0}
+  .chk-titulo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:2px;flex:1;text-align:center}
+  .chk-body{padding:20px 16px;background:var(--bg);min-height:calc(100vh - 60px)}
+  .sec{background:#fff;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:14px;overflow:hidden}
+  .sec-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .sec-dot{width:8px;height:8px;border-radius:50%;background:var(--ouro);flex-shrink:0}
+  .sec-label{font-size:12px;font-weight:700;color:var(--azul);letter-spacing:.8px;text-transform:uppercase}
+  .sec-content{padding:14px 16px}
+  .chk-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+  .chk-row:last-child{border-bottom:none}
+  .chk-row-nome{font-size:13px;color:var(--text);font-weight:500}
+  .chk-row-preco{font-size:13px;color:var(--muted)}
+  .total-row{display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:2px}
+  .total-label{font-size:15px;font-weight:700;color:var(--text)}
+  .total-valor{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--azul);letter-spacing:1px}
+  .obs-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:#fff;color:var(--text);resize:none;outline:none;font-family:'Inter',sans-serif}
+  .obs-input:focus{border-color:var(--azul)}
+  .pgto-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .pgto-btn{padding:12px 4px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:#555;transition:all .2s;font-family:'Inter',sans-serif}
+  .pgto-btn.ativo{border-color:var(--ouro);background:var(--azul);color:var(--ouro)}
+  .confirmar-btn{width:100%;padding:16px;background:var(--ouro);border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--azul);cursor:pointer;transition:opacity .2s;margin-top:4px}
+  .confirmar-btn:hover{opacity:.9}
+  .confirmar-btn:active{transform:scale(.98)}
+
+  /* SUCESSO */
+  #tela-sucesso{display:none;background:var(--bg);min-height:100vh}
+  .sucesso-body{padding:40px 20px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+  .sucesso-icon{width:80px;height:80px;background:var(--azul);border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .sucesso-icon svg{width:36px;height:36px}
+  .sucesso-titulo{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--azul);letter-spacing:2px}
+  .sucesso-num{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--ouro);background:var(--azul);padding:8px 32px;border-radius:14px;letter-spacing:2px;margin:4px 0}
+  .sucesso-sub{font-size:14px;color:var(--muted);line-height:1.6;max-width:260px}
+  .eta-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px 32px;width:100%}
+  .eta-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+  .eta-val{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--azul);letter-spacing:2px;margin-top:4px}
+  .novo-btn{padding:12px 32px;border:2px solid var(--azul);border-radius:10px;background:transparent;font-size:13px;font-weight:700;cursor:pointer;color:var(--azul);font-family:'Inter',sans-serif;letter-spacing:.3px;margin-top:8px;transition:all .2s}
+  .novo-btn:hover{background:var(--azul);color:var(--ouro)}
+
+  /* LOADING */
+  .loading{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+  .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--azul);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  @media(max-width:400px){
+    .item-img{width:84px}
+    .item-img .emoji-fallback{font-size:32px}
+  }
+</style>
+</head>
+<body>
+
+<!-- TELA CARDÁPIO -->
+<div id="tela-cardapio">
+  <div class="header">
+    <div class="header-top">
+      <div class="mesa-tag" id="mesa-tag">Mesa —</div>
+      <div class="horario">Seg–Dom  11h–23h</div>
+    </div>
+    <div class="logo">
+      <div class="logo-line"></div>
+      <div class="logo-nome">DONALDS'</div>
+      <div class="logo-sub">SANDUICHERIA</div>
+      <div class="logo-line"></div>
+    </div>
+    <div class="search">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <circle cx="6.5" cy="6.5" r="5" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
+        <path d="M10 10l4 4" stroke="rgba(255,255,255,.5)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="busca-input" placeholder="Buscar no cardápio..." oninput="buscar(this.value)"/>
+    </div>
+  </div>
+
+  <div class="cats-wrap">
+    <div class="cats" id="cats-container"></div>
+  </div>
+
+  <div id="lista-container">
+    <div class="loading"><div class="spinner"></div>Carregando cardápio...</div>
+  </div>
+
+  <div class="cart-bar oculto" id="cart-bar" onclick="abrirCheckout()">
+    <div class="cart-esq">
+      <div class="cart-qtd" id="cart-qtd">0</div>
+      <span class="cart-label">VER MEU PEDIDO</span>
+    </div>
+    <span class="cart-valor" id="cart-valor">R$ 0,00</span>
+  </div>
+</div>
+
+<!-- TELA CHECKOUT -->
+<div id="tela-checkout">
+  <div class="chk-header">
+    <button class="chk-voltar" onclick="voltarCardapio()">← Voltar</button>
+    <div class="chk-titulo">MEU PEDIDO</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="chk-body">
+    <div class="sec">
+      <div class="sec-head"><div class="sec-dot"></div><span class="sec-label">Itens do pedido</span></div>
+      <div class="sec-content" id="chk-itens"></div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><div class="sec-dot"></div><span class="sec-label">Observações</span></div>
+      <div class="sec-content">
+        <textarea class="obs-input" id="obs-input" rows="2" placeholder="Ex: sem cebola, maionese à parte, ponto da carne..."></textarea>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><div class="sec-dot"></div><span class="sec-label">Forma de pagamento</span></div>
+      <div class="sec-content">
+        <div class="pgto-grid">
+          <button class="pgto-btn ativo" onclick="selecionarPgto(this)">PIX</button>
+          <button class="pgto-btn" onclick="selecionarPgto(this)">Cartão</button>
+          <button class="pgto-btn" onclick="selecionarPgto(this)">Dinheiro</button>
+        </div>
+      </div>
+    </div>
+    <button class="confirmar-btn" onclick="confirmarPedido()">FAZER PEDIDO</button>
+  </div>
+</div>
+
+<!-- TELA SUCESSO -->
+<div id="tela-sucesso">
+  <div class="header" style="position:relative">
+    <div class="logo">
+      <div class="logo-line"></div>
+      <div class="logo-nome">DONALDS'</div>
+      <div class="logo-sub">SANDUICHERIA</div>
+      <div class="logo-line"></div>
+    </div>
+  </div>
+  <div class="sucesso-body">
+    <div class="sucesso-icon">
+      <svg viewBox="0 0 36 36" fill="none">
+        <polyline points="7,19 15,27 29,10" stroke="#f5c518" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="sucesso-titulo">PEDIDO CONFIRMADO!</div>
+    <div class="sucesso-num" id="sucesso-num">#000</div>
+    <div class="sucesso-sub">Seu pedido foi enviado para a cozinha. Avisamos quando estiver pronto!</div>
+    <div class="eta-card">
+      <div class="eta-label">Previsão de entrega</div>
+      <div class="eta-val">~20 MIN</div>
+    </div>
+    <button class="novo-btn" onclick="novoPedido()">Fazer novo pedido</button>
+  </div>
+</div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
+    authDomain: "donals-e00f4.firebaseapp.com",
+    projectId: "donals-e00f4",
+    storageBucket: "donals-e00f4.firebasestorage.app",
+    messagingSenderId: "391280941743",
+    appId: "1:391280941743:web:1f9db3a7dc69896b0c125a",
+    measurementId: "G-H6Y1BYGE0K"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Detecta mesa pela URL: cardapio.html?mesa=7
+  const params = new URLSearchParams(window.location.search);
+  const mesa = params.get('mesa') || '1';
+  document.getElementById('mesa-tag').textContent = 'Mesa ' + mesa;
+
+  const CATS = [
+    {id:'todos', label:'Todos'},
+    {id:'classicos', label:'Clássicos'},
+    {id:'especiais', label:'Especiais'},
+    {id:'combos', label:'Combos'},
+    {id:'bebidas', label:'Bebidas'},
+  ];
+
+  let cardapioData = [];
+  let carrinho = {};
+  let catAtiva = 'todos';
+  let buscaAtiva = '';
+  let pgtoSelecionado = 'PIX';
+
+  // Carregar cardápio do Firestore
+  async function carregarCardapio() {
+    try {
+      const snap = await getDocs(collection(db, 'cardapio'));
+      cardapioData = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(i => i.ativo !== false)
+        .sort((a, b) => (a.ordem || 99) - (b.ordem || 99));
+      renderCats();
+      renderLista();
+    } catch(e) {
+      document.getElementById('lista-container').innerHTML =
+        '<div class="vazio">Erro ao carregar cardápio. Tente novamente.</div>';
+    }
+  }
+
+  function renderCats() {
+    const el = document.getElementById('cats-container');
+    el.innerHTML = CATS.map(c =>
+      `<button class="cat${c.id === catAtiva ? ' ativo' : ''}" onclick="window._filterCat('${c.id}')">${c.label}</button>`
+    ).join('');
+  }
+
+  function renderLista() {
+    let lista = [...cardapioData];
+    if (catAtiva !== 'todos') lista = lista.filter(i => i.categoria === catAtiva);
+    if (buscaAtiva) {
+      const b = buscaAtiva.toLowerCase();
+      lista = lista.filter(i => i.nome.toLowerCase().includes(b) || (i.descricao||'').toLowerCase().includes(b));
+    }
+
+    if (!lista.length) {
+      document.getElementById('lista-container').innerHTML = '<div class="vazio">Nenhum item encontrado.</div>';
+      return;
+    }
+
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+
+    document.getElementById('lista-container').innerHTML =
+      '<div class="items">' +
+      lista.map(item => {
+        const qty = carrinho[item.id] || 0;
+        const badgeHtml = item.badge === 'hot' ? '<span class="badge badge-hot">quente</span>'
+          : item.badge === 'new' ? '<span class="badge badge-new">novo</span>'
+          : item.badge === 'dest' ? '<span class="badge badge-dest">destaque</span>' : '';
+        const ctrl = qty > 0
+          ? `<div class="qty-ctrl">
+               <button class="qty-btn" onclick="window._chQty('${item.id}',-1)">−</button>
+               <span class="qty-num">${qty}</span>
+               <button class="qty-btn" onclick="window._chQty('${item.id}',1)">+</button>
+             </div>`
+          : `<button class="add-btn" onclick="window._addItem('${item.id}')">+</button>`;
+        const imgHtml = item.foto
+          ? `<img src="${item.foto}" alt="${item.nome}" loading="lazy"/>`
+          : `<span class="emoji-fallback">${item.emoji || '🍔'}</span>`;
+        return `
+          <div class="item">
+            <div class="item-img">${imgHtml}</div>
+            <div class="item-body">
+              <div>
+                <div class="item-nome">${item.nome}${badgeHtml}</div>
+                <div class="item-desc">${item.descricao || ''}</div>
+              </div>
+              <div class="item-footer">
+                <span class="item-preco">${fmt(item.preco)}</span>
+                ${ctrl}
+              </div>
+            </div>
+          </div>`;
+      }).join('') + '</div>';
+  }
+
+  function atualizarCarrinho() {
+    const total = Object.entries(carrinho).reduce((a, [id, q]) => {
+      const it = cardapioData.find(x => x.id === id);
+      return it ? a + it.preco * q : a;
+    }, 0);
+    const count = Object.values(carrinho).reduce((a, b) => a + b, 0);
+    const fmt = v => 'R$ ' + total.toFixed(2).replace('.', ',');
+    document.getElementById('cart-qtd').textContent = count;
+    document.getElementById('cart-valor').textContent = fmt(total);
+    document.getElementById('cart-bar').classList.toggle('oculto', count === 0);
+  }
+
+  window._addItem = id => { carrinho[id] = (carrinho[id] || 0) + 1; atualizarCarrinho(); renderLista(); };
+  window._chQty = (id, d) => {
+    carrinho[id] = (carrinho[id] || 0) + d;
+    if (carrinho[id] <= 0) delete carrinho[id];
+    atualizarCarrinho(); renderLista();
+  };
+  window._filterCat = cat => { catAtiva = cat; buscaAtiva = ''; document.getElementById('busca-input').value = ''; renderCats(); renderLista(); };
+
+  window.buscar = v => { buscaAtiva = v.toLowerCase(); renderLista(); };
+
+  window.abrirCheckout = () => {
+    const fmt = v => 'R$ ' + v.toFixed(2).replace('.', ',');
+    const total = Object.entries(carrinho).reduce((a, [id, q]) => {
+      const it = cardapioData.find(x => x.id === id);
+      return it ? a + it.preco * q : a;
+    }, 0);
+    const itensHtml = Object.entries(carrinho).map(([id, q]) => {
+      const it = cardapioData.find(x => x.id === id);
+      if (!it) return '';
+      return `<div class="chk-row">
+        <span class="chk-row-nome">${q}x ${it.nome}</span>
+        <span class="chk-row-preco">${fmt(it.preco * q)}</span>
+      </div>`;
+    }).join('') +
+    `<div class="total-row"><span class="total-label">Total</span><span class="total-valor">${fmt(total)}</span></div>`;
+    document.getElementById('chk-itens').innerHTML = itensHtml;
+    document.getElementById('tela-cardapio').style.display = 'none';
+    document.getElementById('tela-checkout').style.display = 'block';
+  };
+
+  window.voltarCardapio = () => {
+    document.getElementById('tela-checkout').style.display = 'none';
+    document.getElementById('tela-cardapio').style.display = 'block';
+  };
+
+  window.selecionarPgto = btn => {
+    document.querySelectorAll('.pgto-btn').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    pgtoSelecionado = btn.textContent;
+  };
+
+  window.confirmarPedido = async () => {
+    const btn = document.querySelector('.confirmar-btn');
+    btn.textContent = 'ENVIANDO...';
+    btn.disabled = true;
+    try {
+      const itensPedido = Object.entries(carrinho).map(([id, q]) => {
+        const it = cardapioData.find(x => x.id === id);
+        return { id, nome: it.nome, quantidade: q, preco: it.preco };
+      });
+      const total = itensPedido.reduce((a, i) => a + i.preco * i.quantidade, 0);
+      const ref = await addDoc(collection(db, 'pedidos'), {
+        mesa: mesa,
+        itens: itensPedido,
+        total: total,
+        observacoes: document.getElementById('obs-input').value,
+        pagamento: pgtoSelecionado,
+        status: 'novo',
+        criadoEm: serverTimestamp()
+      });
+      const num = ref.id.slice(-4).toUpperCase();
+      document.getElementById('sucesso-num').textContent = '#' + num;
+      document.getElementById('tela-checkout').style.display = 'none';
+      document.getElementById('tela-sucesso').style.display = 'block';
+    } catch(e) {
+      alert('Erro ao enviar pedido. Tente novamente.');
+      btn.textContent = 'FAZER PEDIDO';
+      btn.disabled = false;
+    }
+  };
+
+  window.novoPedido = () => {
+    carrinho = {};
+    document.getElementById('obs-input').value = '';
+    atualizarCarrinho();
+    renderLista();
+    document.getElementById('tela-sucesso').style.display = 'none';
+    document.getElementById('tela-cardapio').style.display = 'block';
+  };
+
+  carregarCardapio();
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cozinha — Donalds'</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--azul:#0d2654;--ouro:#f5c518;--bg:#0a0a0a;--card:#161616;--border:#2a2a2a;--text:#f0f0f0;--muted:#666;--radius:14px}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  .header{background:#111;border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fff;letter-spacing:3px}
+  .logo span{color:var(--ouro)}
+  .header-right{display:flex;align-items:center;gap:16px}
+  .hora{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--ouro);letter-spacing:2px}
+  .atualizar-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+  .atualizar-btn:hover{border-color:var(--ouro);color:var(--ouro)}
+  .colunas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:20px;min-height:calc(100vh - 64px)}
+  .coluna-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .coluna-titulo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px}
+  .coluna-titulo.novo{color:#f59e0b}
+  .coluna-titulo.preparo{color:#60a5fa}
+  .coluna-titulo.pronto{color:#4ade80}
+  .coluna-count{font-size:12px;background:var(--border);color:var(--muted);padding:3px 10px;border-radius:20px;font-weight:700}
+  .cards{display:flex;flex-direction:column;gap:10px;min-height:100px}
+  .pedido{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .3s}
+  .pedido.novo{border-left:3px solid #f59e0b}
+  .pedido.preparo{border-left:3px solid #60a5fa}
+  .pedido.pronto{border-left:3px solid #4ade80}
+  .pedido-head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+  .p-num{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px}
+  .p-num.novo{color:#f59e0b}
+  .p-num.preparo{color:#60a5fa}
+  .p-num.pronto{color:#4ade80}
+  .p-mesa{font-size:12px;color:var(--muted)}
+  .p-pgto{font-size:11px;color:var(--muted);background:var(--border);padding:2px 8px;border-radius:10px}
+  .pedido-itens{padding:12px 14px}
+  .item-linha{font-size:13px;color:var(--text);padding:4px 0;border-bottom:1px solid #1e1e1e;display:flex;align-items:baseline;gap:8px}
+  .item-linha:last-child{border-bottom:none}
+  .item-qty{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--ouro)}
+  .obs{font-size:11px;color:#f59e0b;background:#1c1800;padding:6px 10px;border-radius:6px;margin:6px 14px 10px}
+  .pedido-foot{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)}
+  .p-total{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text);letter-spacing:1px}
+  .p-tempo{font-size:11px;color:var(--muted)}
+  .acao-btn{padding:7px 16px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+  .acao-btn.iniciar{background:#1e3a5f;color:#60a5fa}
+  .acao-btn.iniciar:hover{background:#2a4f7f}
+  .acao-btn.pronto{background:#14532d;color:#4ade80}
+  .acao-btn.pronto:hover{background:#166534}
+  .acao-btn.entregue{background:#1e1e1e;color:#666}
+  .acao-btn.entregue:hover{background:#2a2a2a;color:#999}
+  .vazio{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius)}
+  .novo-alerta{position:fixed;top:80px;right:20px;background:#f59e0b;color:#000;padding:12px 20px;border-radius:10px;font-weight:700;font-size:14px;display:none;z-index:999;animation:fadeIn .3s}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+  @media(max-width:900px){.colunas{grid-template-columns:1fr;padding:12px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">DONALDS' <span>COZINHA</span></div>
+  <div class="header-right">
+    <div class="hora" id="hora">00:00</div>
+    <button class="atualizar-btn" onclick="carregarPedidos()">Atualizar</button>
+  </div>
+</div>
+
+<div class="colunas">
+  <div>
+    <div class="coluna-header">
+      <div class="coluna-titulo novo">NOVOS</div>
+      <div class="coluna-count" id="cnt-novo">0</div>
+    </div>
+    <div class="cards" id="col-novo"></div>
+  </div>
+  <div>
+    <div class="coluna-header">
+      <div class="coluna-titulo preparo">EM PREPARO</div>
+      <div class="coluna-count" id="cnt-preparo">0</div>
+    </div>
+    <div class="cards" id="col-preparo"></div>
+  </div>
+  <div>
+    <div class="coluna-header">
+      <div class="coluna-titulo pronto">PRONTOS</div>
+      <div class="coluna-count" id="cnt-pronto">0</div>
+    </div>
+    <div class="cards" id="col-pronto"></div>
+  </div>
+</div>
+
+<div class="novo-alerta" id="novo-alerta">Novo pedido chegou!</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, updateDoc, doc, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
+    authDomain: "donals-e00f4.firebaseapp.com",
+    projectId: "donals-e00f4",
+    storageBucket: "donals-e00f4.firebasestorage.app",
+    messagingSenderId: "391280941743",
+    appId: "1:391280941743:web:1f9db3a7dc69896b0c125a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Relógio
+  setInterval(() => {
+    document.getElementById('hora').textContent = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }, 1000);
+
+  const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+  const tempo = ts => {
+    if (!ts) return '';
+    const diff = Math.floor((Date.now() - ts.toDate().getTime()) / 60000);
+    return diff < 1 ? 'agora' : diff + ' min atrás';
+  };
+
+  let ultimoCount = 0;
+
+  function renderPedidos(pedidos) {
+    const grupos = {novo:[], preparo:[], pronto:[]};
+    pedidos.forEach(p => { if (grupos[p.status]) grupos[p.status].push(p); });
+
+    // Alerta de novo pedido
+    if (grupos.novo.length > ultimoCount && ultimoCount >= 0) {
+      const alerta = document.getElementById('novo-alerta');
+      alerta.style.display = 'block';
+      setTimeout(() => alerta.style.display = 'none', 3000);
+    }
+    ultimoCount = grupos.novo.length;
+
+    document.getElementById('cnt-novo').textContent = grupos.novo.length;
+    document.getElementById('cnt-preparo').textContent = grupos.preparo.length;
+    document.getElementById('cnt-pronto').textContent = grupos.pronto.length;
+
+    ['novo','preparo','pronto'].forEach(status => {
+      const col = document.getElementById('col-' + status);
+      if (!grupos[status].length) {
+        col.innerHTML = `<div class="vazio">Nenhum pedido aqui</div>`;
+        return;
+      }
+      col.innerHTML = grupos[status].map(p => {
+        const itensHtml = (p.itens||[]).map(i =>
+          `<div class="item-linha"><span class="item-qty">${i.quantidade}x</span><span>${i.nome}</span></div>`
+        ).join('');
+        const obsHtml = p.observacoes ? `<div class="obs">Obs: ${p.observacoes}</div>` : '';
+        const acao = status === 'novo'
+          ? `<button class="acao-btn iniciar" onclick="window._upStatus('${p.id}','preparo')">Iniciar preparo</button>`
+          : status === 'preparo'
+          ? `<button class="acao-btn pronto" onclick="window._upStatus('${p.id}','pronto')">Marcar pronto</button>`
+          : `<button class="acao-btn entregue" onclick="window._upStatus('${p.id}','entregue')">Entregue</button>`;
+        return `<div class="pedido ${status}">
+          <div class="pedido-head">
+            <div>
+              <div class="p-num ${status}">#${p.id.slice(-4).toUpperCase()}</div>
+              <div class="p-mesa">Mesa ${p.mesa}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="p-pgto">${p.pagamento||'—'}</div>
+              <div class="p-tempo" style="margin-top:4px">${tempo(p.criadoEm)}</div>
+            </div>
+          </div>
+          <div class="pedido-itens">${itensHtml}</div>
+          ${obsHtml}
+          <div class="pedido-foot">
+            <span class="p-total">${fmt(p.total||0)}</span>
+            ${acao}
+          </div>
+        </div>`;
+      }).join('');
+    });
+  }
+
+  // Listener em tempo real
+  const q = query(collection(db,'pedidos'), orderBy('criadoEm','desc'));
+  onSnapshot(q, snap => {
+    const pedidos = snap.docs
+      .map(d => ({id:d.id,...d.data()}))
+      .filter(p => p.status !== 'entregue')
+      .slice(0, 30);
+    renderPedidos(pedidos);
+  });
+
+  window.carregarPedidos = () => {}; // onSnapshot já atualiza
+
+  window._upStatus = async (id, status) => {
+    await updateDoc(doc(db,'pedidos',id), { status });
+  };
+</script>
+</body>
+</html>
