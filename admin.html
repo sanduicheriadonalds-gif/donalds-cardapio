@@ -80,12 +80,8 @@
   .campo input,.campo select,.campo textarea{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;color:var(--text);outline:none;background:#fff;transition:border-color .2s}
   .campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--azul)}
   .campo-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative}
-  .upload-area:hover{border-color:var(--azul)}
-  .upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-  .upload-preview{width:80px;height:80px;border-radius:10px;object-fit:cover;margin:0 auto 8px;display:block}
-  .upload-txt{font-size:13px;color:var(--muted)}
-  .upload-icon{font-size:28px;margin-bottom:6px}
+  .foto-preview{width:80px;height:80px;border-radius:10px;object-fit:cover;border:1px solid var(--border)}
+  .foto-preview-wrap{display:flex;align-items:center;gap:12px;margin-top:8px}
   .modal-footer{display:flex;gap:10px;margin-top:20px}
   .modal-footer .btn-prim{flex:1;padding:13px;font-size:14px}
   .hidden{display:none!important}
@@ -255,13 +251,14 @@
       </div>
       <div class="campo"><label>Emoji (fallback)</label><input type="text" id="item-emoji" placeholder="🍔"/></div>
     </div>
-    <div class="campo"><label>Foto do produto</label>
-      <div class="upload-area" id="upload-area">
-        <input type="file" accept="image/*" id="item-foto-input" onchange="previewFoto(this)"/>
-        <div id="upload-preview-wrap">
-          <div class="upload-icon">📷</div>
-          <div class="upload-txt">Toque para selecionar a foto<br><small>JPG, PNG ou WEBP — máx. 2MB</small></div>
-        </div>
+    <div class="campo"><label>URL da foto</label>
+      <input type="url" id="item-foto-url" placeholder="https://i.ibb.co/exemplo/foto.jpg" oninput="previewUrl(this.value)"/>
+      <div class="foto-preview-wrap" id="foto-preview-wrap" style="display:none">
+        <img id="foto-preview-img" class="foto-preview" src="" alt="preview"/>
+        <span style="font-size:12px;color:var(--muted)">Preview da foto</span>
+      </div>
+      <div style="margin-top:8px;padding:10px 12px;background:#f0f7ff;border-radius:8px;font-size:12px;color:#1a56a0;line-height:1.6">
+        Suba a foto gratuitamente em <strong><a href="https://imgbb.com" target="_blank" style="color:#1a56a0">imgbb.com</a></strong> → clique na imagem → copie o link <em>"Direct link"</em> e cole aqui.
       </div>
     </div>
     <div class="campo"><label>Status</label>
@@ -307,7 +304,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
 
   const firebaseConfig = {
     apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
@@ -320,7 +317,7 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  const storage = getStorage(app);
+
 
   // CREDENCIAIS ADMIN — altere aqui
   const USUARIOS = {
@@ -332,7 +329,6 @@
   const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html','') + 'cardapio.html';
 
   let itemEditandoId = null;
-  let fotoFile = null;
   let fotoAtualUrl = null;
 
   // LOGIN
@@ -411,7 +407,7 @@
   }
 
   window.abrirModalItem = () => {
-    itemEditandoId = null; fotoFile = null; fotoAtualUrl = null;
+    itemEditandoId = null; fotoAtualUrl = null;
     document.getElementById('modal-item-titulo').textContent = 'NOVO ITEM';
     document.getElementById('item-nome').value = '';
     document.getElementById('item-desc').value = '';
@@ -419,7 +415,8 @@
     document.getElementById('item-emoji').value = '🍔';
     document.getElementById('item-badge').value = '';
     document.getElementById('item-status').value = 'true';
-    document.getElementById('upload-preview-wrap').innerHTML = '<div class="upload-icon">📷</div><div class="upload-txt">Toque para selecionar a foto<br><small>JPG, PNG ou WEBP — máx. 2MB</small></div>';
+    document.getElementById('item-foto-url').value = '';
+    document.getElementById('foto-preview-wrap').style.display = 'none';
     document.getElementById('modal-item').classList.remove('hidden');
   };
 
@@ -428,7 +425,7 @@
     const d = snap.docs.find(x => x.id === id);
     if (!d) return;
     const it = d.data();
-    itemEditandoId = id; fotoAtualUrl = it.foto || null; fotoFile = null;
+    itemEditandoId = id; fotoAtualUrl = it.foto || null;
     document.getElementById('modal-item-titulo').textContent = 'EDITAR ITEM';
     document.getElementById('item-nome').value = it.nome || '';
     document.getElementById('item-desc').value = it.descricao || '';
@@ -437,8 +434,12 @@
     document.getElementById('item-badge').value = it.badge || '';
     document.getElementById('item-emoji').value = it.emoji || '🍔';
     document.getElementById('item-status').value = it.ativo !== false ? 'true' : 'false';
+    document.getElementById('item-foto-url').value = it.foto || '';
     if (it.foto) {
-      document.getElementById('upload-preview-wrap').innerHTML = `<img src="${it.foto}" class="upload-preview"/><div class="upload-txt">Toque para trocar a foto</div>`;
+      document.getElementById('foto-preview-img').src = it.foto;
+      document.getElementById('foto-preview-wrap').style.display = 'flex';
+    } else {
+      document.getElementById('foto-preview-wrap').style.display = 'none';
     }
     document.getElementById('modal-item').classList.remove('hidden');
   };
@@ -449,26 +450,21 @@
     carregarCardapio();
   };
 
-  window.previewFoto = input => {
-    if (!input.files[0]) return;
-    fotoFile = input.files[0];
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('upload-preview-wrap').innerHTML = `<img src="${e.target.result}" class="upload-preview"/><div class="upload-txt">Toque para trocar</div>`;
-    };
-    reader.readAsDataURL(fotoFile);
+  window.previewUrl = url => {
+    const wrap = document.getElementById('foto-preview-wrap');
+    const img = document.getElementById('foto-preview-img');
+    if (url && url.startsWith('http')) {
+      img.src = url; wrap.style.display = 'flex';
+    } else {
+      wrap.style.display = 'none';
+    }
   };
 
   window.salvarItem = async () => {
     const btn = document.getElementById('btn-salvar-item');
     btn.textContent = 'Salvando...'; btn.disabled = true;
     try {
-      let fotoUrl = fotoAtualUrl;
-      if (fotoFile) {
-        const ref = storageRef(storage, `cardapio/${Date.now()}_${fotoFile.name}`);
-        await uploadBytes(ref, fotoFile);
-        fotoUrl = await getDownloadURL(ref);
-      }
+      const fotoUrl = document.getElementById('item-foto-url').value.trim() || fotoAtualUrl || null;
       const snap = await getDocs(collection(db,'cardapio'));
       const dados = {
         nome: document.getElementById('item-nome').value,
@@ -478,7 +474,7 @@
         badge: document.getElementById('item-badge').value,
         emoji: document.getElementById('item-emoji').value || '🍔',
         ativo: document.getElementById('item-status').value === 'true',
-        foto: fotoUrl || null,
+        foto: fotoUrl,
         ordem: snap.size + 1,
       };
       if (itemEditandoId) {
