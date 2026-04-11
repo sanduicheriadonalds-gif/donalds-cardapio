@@ -810,6 +810,27 @@
     if (id === 'btn-novo-ingrediente') window.abrirModalEstoque();
     if (id === 'btn-nova-entrada') window.abrirModalEntrada();
     if (id === 'btn-atualizar-pedidos') window.carregarPedidos();
+
+    // Cardápio
+    const editarId = e.target.dataset?.editar || e.target.closest('[data-editar]')?.dataset?.editar;
+    if (editarId) window._editarItem(editarId);
+    const deletarId = e.target.dataset?.deletar || e.target.closest('[data-deletar]')?.dataset?.deletar;
+    if (deletarId) window._deletarItem(deletarId);
+
+    // Estoque
+    const editarEst = e.target.dataset?.editarEst || e.target.closest('[data-editar-est]')?.dataset?.editarEst;
+    if (editarEst) window._editarEstoque(editarEst);
+    const deletarEst = e.target.dataset?.deletarEst || e.target.closest('[data-deletar-est]')?.dataset?.deletarEst;
+    if (deletarEst) window._deletarEstoque(deletarEst);
+    const ajustarBtn = e.target.closest('[data-ajustar-est]');
+    if (ajustarBtn) {
+      const d = ajustarBtn.dataset;
+      window._ajustarEstoque(d.ajustarEst, d.nome, parseFloat(d.qtd), d.unidade);
+    }
+
+    // Pedidos ao vivo — status
+    const upBtn = e.target.closest('[data-up-status]');
+    if (upBtn) window._updateStatus(upBtn.dataset.upStatus, upBtn.dataset.novoStatus);
   });
 
   // Auto-refresh do dashboard a cada 60s
@@ -874,8 +895,8 @@
           <td><span class="tag ${it.ativo!==false?'tag-ativo':'tag-inativo'}">${it.ativo!==false?'Ativo':'Inativo'}</span></td>
           <td>${badgeTag(it.badge)}</td>
           <td><div style="display:flex;gap:6px">
-            <button class="btn-sec" onclick="window._editarItem('${it.id}')">Editar</button>
-            <button class="btn-danger" onclick="window._deletarItem('${it.id}')">Excluir</button>
+            <button class="btn-sec" data-editar="${it.id}">Editar</button>
+            <button class="btn-danger" data-deletar="${it.id}">Excluir</button>
           </div></td>
         </tr>`;
       }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">Nenhum item cadastrado.</td></tr>';
@@ -1082,9 +1103,9 @@
         <td>${Number(it.minimo).toFixed(3)} ${it.unidade||''}</td>
         <td>${st}</td>
         <td><div style="display:flex;gap:6px">
-          <button class="btn-sec" onclick="window._editarEstoque('${it.id}')">Editar</button>
-          <button class="btn-sec" style="border-color:var(--success);color:var(--success)" onclick="window._ajustarEstoque('${it.id}','${it.nome}',${it.quantidade},'${it.unidade}')">+ Entrada</button>
-          <button class="btn-danger" onclick="window._deletarEstoque('${it.id}')">Excluir</button>
+          <button class="btn-sec" data-editar-est="${it.id}">Editar</button>
+          <button class="btn-sec" style="border-color:var(--success);color:var(--success)" data-ajustar-est="${it.id}" data-nome="${it.nome}" data-qtd="${it.quantidade}" data-unidade="${it.unidade||''}">+ Entrada</button>
+          <button class="btn-danger" data-deletar-est="${it.id}">Excluir</button>
         </div></td>
       </tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#aaa">Nenhum ingrediente cadastrado.</td></tr>';
@@ -1170,10 +1191,10 @@
       const itensStr = (p.itens||[]).map(i=>`${i.quantidade}x ${i.nome}`).join(', ');
       const stTag = p.status==='novo'?'<span class="pedido-status status-novo">Novo</span>':p.status==='preparo'?'<span class="pedido-status status-preparo">Em preparo</span>':'<span class="pedido-status status-pronto">Pronto</span>';
       const acoes = p.status==='novo'
-        ? `<button class="btn-status btn-preparo" onclick="window._updateStatus('${p.id}','preparo')">Iniciar preparo</button>`
+        ? `<button class="btn-status btn-preparo" data-up-status="${p.id}" data-novo-status="preparo">Iniciar preparo</button>`
         : p.status==='preparo'
-        ? `<button class="btn-status btn-pronto" onclick="window._updateStatus('${p.id}','pronto')">Marcar pronto</button>`
-        : `<button class="btn-status" style="background:#f0f0f0;color:#555" onclick="window._updateStatus('${p.id}','entregue')">Entregue</button>`;
+        ? `<button class="btn-status btn-pronto" data-up-status="${p.id}" data-novo-status="pronto">Marcar pronto</button>`
+        : `<button class="btn-status" style="background:#f0f0f0;color:#555" data-up-status="${p.id}" data-novo-status="entregue">Entregue</button>`;
       return `<div class="pedido-card">
         <div class="pedido-card-head">
           <div><div class="pedido-num">#${p.id.slice(-4).toUpperCase()}</div><div class="pedido-mesa">Mesa ${p.mesa} · ${p.pagamento||'—'}</div></div>
