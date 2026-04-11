@@ -91,6 +91,9 @@
   .receita-add-row{display:flex;gap:8px;align-items:center}
   .receita-add-row select{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:#fff;color:var(--text);outline:none}
   .receita-vazio{font-size:12px;color:var(--muted);text-align:center;padding:12px;border:1px dashed var(--border);border-radius:8px}
+  .desc-tag{display:inline-flex;align-items:center;gap:5px;background:#e8eef8;color:#0d2654;border-radius:20px;padding:4px 10px 4px 12px;font-size:12px;font-weight:600}
+  .desc-tag button{background:none;border:none;cursor:pointer;color:#0d2654;font-size:14px;line-height:1;padding:0;opacity:.6}
+  .desc-tag button:hover{opacity:1}
   .modal-footer{display:flex;gap:10px;margin-top:20px}
   .modal-footer .btn-prim{flex:1;padding:13px;font-size:14px}
   .hidden{display:none!important}
@@ -269,7 +272,17 @@
   <div class="modal">
     <div class="modal-titulo" id="modal-item-titulo">NOVO ITEM</div>
     <div class="campo"><label>Nome do item</label><input type="text" id="item-nome" placeholder="Ex: Smash clássico"/></div>
-    <div class="campo"><label>Descrição</label><textarea id="item-desc" rows="2" placeholder="Ingredientes e detalhes..."></textarea></div>
+    <div class="campo"><label>Descrição</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <select id="desc-ing-sel" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;color:var(--text);outline:none;background:#fff">
+          <option value="">Selecione um ingrediente...</option>
+        </select>
+        <button type="button" onclick="adicionarDescIngrediente()" class="btn-sec" style="white-space:nowrap;padding:9px 14px">+ Adicionar</button>
+      </div>
+      <div id="desc-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+      <input type="text" id="desc-extra" placeholder="Informação adicional (opcional)..." style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;color:var(--text);outline:none"/>
+      <input type="hidden" id="item-desc"/>
+    </div>
     <div class="campo-row">
       <div class="campo"><label>Preço (R$)</label><input type="number" id="item-preco" step="0.01" placeholder="0,00"/></div>
       <div class="campo"><label>Categoria</label>
@@ -628,7 +641,43 @@
   const NUM_MESAS = 35;
   const BASE_URL = window.location.origin + window.location.pathname.replace('admin.html','') + 'cardapio.html';
 
-  let receitaAtual = [];
+  let descIngredientes = []; // nomes selecionados para a descrição
+
+  function renderDescTags() {
+    const wrap = document.getElementById('desc-tags');
+    if (!wrap) return;
+    wrap.innerHTML = descIngredientes.map((nome, i) =>
+      `<span class="desc-tag">${nome}<button type="button" onclick="removerDescTag(${i})">×</button></span>`
+    ).join('');
+    sincronizarDesc();
+  }
+
+  function sincronizarDesc() {
+    const extra = document.getElementById('desc-extra')?.value?.trim() || '';
+    const partes = [...descIngredientes];
+    if (extra) partes.push(extra);
+    const hidden = document.getElementById('item-desc');
+    if (hidden) hidden.value = partes.join(', ');
+  }
+
+  window.adicionarDescIngrediente = () => {
+    const sel = document.getElementById('desc-ing-sel');
+    const val = sel.value.trim();
+    if (!val || descIngredientes.includes(val)) { sel.value = ''; return; }
+    descIngredientes.push(val);
+    sel.value = '';
+    renderDescTags();
+  };
+
+  window.removerDescTag = i => {
+    descIngredientes.splice(i, 1);
+    renderDescTags();
+  };
+
+  // Sincroniza ao digitar no campo extra
+  document.addEventListener('input', e => {
+    if (e.target.id === 'desc-extra') sincronizarDesc();
+  });
   let estoqueCache = [];
   let itemEditandoId = null;
   let fotoAtualUrl = null;
@@ -640,6 +689,15 @@
   async function carregarEstoqueCache() {
     const snap = await getDocs(collection(db,'estoque'));
     estoqueCache = snap.docs.map(d => ({id:d.id,...d.data()}));
+    // Atualiza select de ingredientes da descrição
+    const sel = document.getElementById('desc-ing-sel');
+    if (sel) {
+      const atual = sel.value;
+      sel.innerHTML = '<option value="">Selecione um ingrediente...</option>' +
+        estoqueCache.sort((a,b) => a.nome.localeCompare(b.nome))
+          .map(e => `<option value="${e.nome}">${e.nome}</option>`).join('');
+      sel.value = atual;
+    }
   }
 
   function renderReceita() {
@@ -838,6 +896,9 @@
       document.getElementById('item-status').value = 'true';
       document.getElementById('item-foto-url').value = '';
       document.getElementById('foto-preview-wrap').style.display = 'none';
+      document.getElementById('desc-extra').value = '';
+      descIngredientes = [];
+      renderDescTags();
       renderReceita();
       document.getElementById('modal-item').classList.remove('hidden');
     } catch(e) { console.error('Erro abrirModalItem:', e); alert('Erro ao abrir formulário: ' + e.message); }
@@ -860,6 +921,19 @@
     document.getElementById('item-emoji').value = it.emoji || '🍔';
     document.getElementById('item-status').value = it.ativo !== false ? 'true' : 'false';
     document.getElementById('item-foto-url').value = it.foto || '';
+    // Carrega descrição como tags (split por vírgula)
+    if (it.descricao) {
+      const partes = it.descricao.split(',').map(s => s.trim()).filter(Boolean);
+      // Separa ingredientes conhecidos do extra
+      const nomesEstoque = estoqueCache.map(e => e.nome.toLowerCase());
+      descIngredientes = partes.filter(p => nomesEstoque.includes(p.toLowerCase()));
+      const extras = partes.filter(p => !nomesEstoque.includes(p.toLowerCase()));
+      document.getElementById('desc-extra').value = extras.join(', ');
+    } else {
+      descIngredientes = [];
+      document.getElementById('desc-extra').value = '';
+    }
+    renderDescTags();
     if (it.foto) {
       document.getElementById('foto-preview-img').src = it.foto;
       document.getElementById('foto-preview-wrap').style.display = 'flex';
