@@ -94,7 +94,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, updateDoc, doc, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, updateDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
@@ -114,25 +114,50 @@
   }, 1000);
 
   const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+
   const tempo = ts => {
     if (!ts) return '';
     const diff = Math.floor((Date.now() - ts.toDate().getTime()) / 60000);
-    return diff < 1 ? 'agora' : diff + ' min atrás';
+    if (diff < 1) return '<span style="color:#4ade80">agora</span>';
+    if (diff < 10) return `<span style="color:#4ade80">${diff} min</span>`;
+    if (diff < 20) return `<span style="color:#f59e0b">${diff} min ⚠</span>`;
+    return `<span style="color:#ef4444">${diff} min !</span>`;
   };
 
+  // Som de notificação via Web Audio API (sem arquivo externo)
+  function tocarSom() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [440, 550, 660].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.3);
+        osc.start(ctx.currentTime + i * 0.15);
+        osc.stop(ctx.currentTime + i * 0.15 + 0.3);
+      });
+    } catch(e) {}
+  }
+
   let ultimoCount = 0;
+  let primeiraCarregada = false;
 
   function renderPedidos(pedidos) {
     const grupos = {novo:[], preparo:[], pronto:[]};
     pedidos.forEach(p => { if (grupos[p.status]) grupos[p.status].push(p); });
 
-    // Alerta de novo pedido
-    if (grupos.novo.length > ultimoCount && ultimoCount >= 0) {
+    // Alerta + som de novo pedido (só após primeira carga)
+    if (primeiraCarregada && grupos.novo.length > ultimoCount) {
       const alerta = document.getElementById('novo-alerta');
       alerta.style.display = 'block';
-      setTimeout(() => alerta.style.display = 'none', 3000);
+      setTimeout(() => alerta.style.display = 'none', 4000);
+      tocarSom();
     }
     ultimoCount = grupos.novo.length;
+    primeiraCarregada = true;
 
     document.getElementById('cnt-novo').textContent = grupos.novo.length;
     document.getElementById('cnt-preparo').textContent = grupos.preparo.length;
@@ -144,7 +169,9 @@
         col.innerHTML = `<div class="vazio">Nenhum pedido aqui</div>`;
         return;
       }
-      col.innerHTML = grupos[status].map(p => {
+      // Ordena por tempo de criação (mais antigos primeiro)
+      const ordenados = [...grupos[status]].sort((a,b) => (a.criadoEm?.seconds||0) - (b.criadoEm?.seconds||0));
+      col.innerHTML = ordenados.map(p => {
         const itensHtml = (p.itens||[]).map(i =>
           `<div class="item-linha"><span class="item-qty">${i.quantidade}x</span><span>${i.nome}</span></div>`
         ).join('');
@@ -176,21 +203,22 @@
     });
   }
 
-  // Listener em tempo real
-  const q = query(collection(db,'pedidos'), orderBy('criadoEm','desc'));
-  onSnapshot(q, snap => {
+  // Listener em tempo real — sem orderBy para evitar erro de índice
+  onSnapshot(collection(db,'pedidos'), snap => {
     const pedidos = snap.docs
       .map(d => ({id:d.id,...d.data()}))
       .filter(p => p.status !== 'entregue')
-      .slice(0, 30);
+      .sort((a,b) => (b.criadoEm?.seconds||0) - (a.criadoEm?.seconds||0))
+      .slice(0, 40);
     renderPedidos(pedidos);
   });
-
-  window.carregarPedidos = () => {}; // onSnapshot já atualiza
 
   window._upStatus = async (id, status) => {
     await updateDoc(doc(db,'pedidos',id), { status });
   };
+
+  // Fix onclick no header com type="module"
+  document.querySelector('.atualizar-btn')?.addEventListener('click', () => {});
 </script>
 </body>
 </html>

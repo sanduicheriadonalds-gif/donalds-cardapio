@@ -146,15 +146,15 @@
       <button class="sair-btn" id="btn-sair">Sair</button>
     </div>
   </div>
-  <div class="adm-nav">
-    <button class="nav-btn ativo" onclick="abrirAba('dashboard',this)">Dashboard</button>
-    <button class="nav-btn" onclick="abrirAba('cardapio',this)">Cardápio</button>
-    <button class="nav-btn" onclick="abrirAba('estoque',this)">Estoque</button>
-    <button class="nav-btn" onclick="abrirAba('pedidos',this)">Pedidos ao vivo</button>
-    <button class="nav-btn" onclick="abrirAba('financeiro',this)">Financeiro</button>
-    <button class="nav-btn" onclick="abrirAba('qrcodes',this)">QR Codes</button>
-    <button class="nav-btn" onclick="abrirAba('entrada',this)">Entrada de mercadoria</button>
-    <button class="nav-btn" onclick="abrirAba('boletos',this)">Boletos</button>
+  <div class="adm-nav" id="adm-nav">
+    <button class="nav-btn ativo" data-aba="dashboard">Dashboard</button>
+    <button class="nav-btn" data-aba="cardapio">Cardápio</button>
+    <button class="nav-btn" data-aba="estoque">Estoque</button>
+    <button class="nav-btn" data-aba="pedidos">Pedidos ao vivo</button>
+    <button class="nav-btn" data-aba="financeiro">Financeiro</button>
+    <button class="nav-btn" data-aba="qrcodes">QR Codes</button>
+    <button class="nav-btn" data-aba="entrada">Entrada de mercadoria</button>
+    <button class="nav-btn" data-aba="boletos">Boletos</button>
   </div>
   <div class="adm-body">
 
@@ -197,14 +197,14 @@
       <div class="tabela-wrap">
         <table>
           <thead><tr><th>Ingrediente</th><th>Estoque</th><th>Uso na receita</th><th>Custo/un</th><th>Mínimo</th><th>Status</th><th>Ações</th></tr></thead>
-          <tbody id="tabela-estoque"><tr><td colspan="6" class="loading-inline">Carregando...</td></tr></tbody>
+          <tbody id="tabela-estoque"><tr><td colspan="7" class="loading-inline">Carregando...</td></tr></tbody>
         </table>
       </div>
     </div>
 
     <!-- PEDIDOS AO VIVO -->
     <div id="aba-pedidos" class="hidden">
-      <div class="sec-titulo">Pedidos ao vivo <button class="btn-sec" onclick="carregarPedidos()">Atualizar</button></div>
+      <div class="sec-titulo">Pedidos ao vivo <button class="btn-sec" id="btn-atualizar-pedidos">Atualizar</button></div>
       <div class="pedidos-grid" id="pedidos-grid"><div class="loading-inline">Carregando pedidos...</div></div>
     </div>
 
@@ -732,13 +732,27 @@
     location.reload();
   });
 
+  // Navegação — resolve problema de onclick com type="module"
+  document.getElementById('adm-nav')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-aba]');
+    if (!btn) return;
+    window.abrirAba(btn.dataset.aba, btn);
+  });
+
   // Botões principais via delegação
   document.addEventListener('click', e => {
     const id = e.target.id || e.target.closest('[id]')?.id;
     if (id === 'btn-novo-item') window.abrirModalItem();
     if (id === 'btn-novo-ingrediente') window.abrirModalEstoque();
     if (id === 'btn-nova-entrada') window.abrirModalEntrada();
+    if (id === 'btn-atualizar-pedidos') window.carregarPedidos();
   });
+
+  // Auto-refresh do dashboard a cada 60s
+  setInterval(() => {
+    const dashAtivo = !document.getElementById('aba-dashboard').classList.contains('hidden');
+    if (dashAtivo) carregarDashboard();
+  }, 60000);
 
   // ABAS
   window.abrirAba = (aba, btn) => {
@@ -851,7 +865,10 @@
   };
 
   window._deletarItem = async id => {
-    if (!confirm('Excluir este item?')) return;
+    const snap = await getDocs(collection(db,'cardapio'));
+    const d = snap.docs.find(x => x.id === id);
+    const nome = d?.data()?.nome || 'este item';
+    if (!confirm(`Excluir "${nome}" do cardápio?\n\nEsta ação não pode ser desfeita.`)) return;
     await deleteDoc(doc(db,'cardapio',id));
     carregarCardapio();
   };

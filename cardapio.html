@@ -269,17 +269,30 @@
 
   // Carregar cardápio do Firestore
   async function carregarCardapio() {
+    document.getElementById('lista-container').innerHTML =
+      '<div class="loading"><div class="spinner"></div>Carregando cardápio...</div>';
     try {
       const snap = await getDocs(collection(db, 'cardapio'));
       cardapioData = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .filter(i => i.ativo !== false)
         .sort((a, b) => (a.ordem || 99) - (b.ordem || 99));
+      if (!cardapioData.length) {
+        document.getElementById('lista-container').innerHTML =
+          '<div class="vazio">Cardápio em preparação. Volte em breve!</div>';
+        return;
+      }
       renderCats();
       renderLista();
     } catch(e) {
       document.getElementById('lista-container').innerHTML =
-        '<div class="vazio">Erro ao carregar cardápio. Tente novamente.</div>';
+        `<div class="vazio">
+          <div style="font-size:28px;margin-bottom:8px">⚠️</div>
+          <div>Erro ao carregar o cardápio.</div>
+          <button onclick="carregarCardapio()" style="margin-top:12px;padding:10px 20px;background:var(--azul);color:var(--ouro);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+            Tentar novamente
+          </button>
+        </div>`;
     }
   }
 
@@ -345,7 +358,7 @@
       return it ? a + it.preco * q : a;
     }, 0);
     const count = Object.values(carrinho).reduce((a, b) => a + b, 0);
-    const fmt = v => 'R$ ' + total.toFixed(2).replace('.', ',');
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
     document.getElementById('cart-qtd').textContent = count;
     document.getElementById('cart-valor').textContent = fmt(total);
     document.getElementById('cart-bar').classList.toggle('oculto', count === 0);
