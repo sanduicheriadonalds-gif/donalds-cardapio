@@ -424,10 +424,29 @@
         ondragover="event.preventDefault();this.style.borderColor='#0d2654'"
         ondragleave="this.style.borderColor='#c7d4f0'"
         ondrop="handleXMLDrop(event)">
-        <input type="file" id="xml-input" accept=".xml" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%" onchange="handleXMLFile(this)"/>
-        <div style="font-size:36px;margin-bottom:8px">📂</div>
-        <div style="font-size:14px;font-weight:600;color:var(--azul)">Arraste o XML aqui ou clique para selecionar</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Arquivo XML da NF-e emitido pelo fornecedor</div>
+        <input type="file" id="xml-input" accept=".xml,.pdf" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%" onchange="handleXMLFile(this)"/>
+        <div id="xml-dropzone-content">
+          <div style="font-size:36px;margin-bottom:8px">📂</div>
+          <div style="font-size:14px;font-weight:600;color:var(--azul)">Arraste o XML aqui ou clique para selecionar</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Arquivo XML da NF-e emitido pelo fornecedor</div>
+        </div>
+      </div>
+      <!-- Aviso PDF -->
+      <div id="aviso-pdf" style="display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="font-size:24px;flex-shrink:0">⚠️</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#854d0e;margin-bottom:6px">PDF não pode ser lido automaticamente</div>
+            <div style="font-size:12px;color:#92400e;line-height:1.6">
+              Arquivos PDF (DANFE, cupom fiscal) não possuem estrutura de dados legível.<br>
+              Use a <strong>Entrada manual</strong> para digitar os dados, ou solicite ao seu fornecedor o arquivo <strong>XML da NF-e</strong>.
+            </div>
+            <button onclick="setModoEntrada('manual')"
+              style="margin-top:10px;padding:8px 18px;background:#854d0e;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+              Usar entrada manual →
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1288,6 +1307,13 @@
     document.getElementById('nf-produtos-lista').innerHTML = '';
     document.getElementById('nf-produtos-vazio').style.display = 'block';
     document.getElementById('nf-totais').style.display = 'none';
+    document.getElementById('aviso-pdf').style.display = 'none';
+    document.getElementById('xml-dropzone').style.borderColor = '#c7d4f0';
+    document.getElementById('xml-dropzone-content').innerHTML =
+      `<div style="font-size:36px;margin-bottom:8px">📂</div>
+       <div style="font-size:14px;font-weight:600;color:var(--azul)">Arraste o XML aqui ou clique para selecionar</div>
+       <div style="font-size:12px;color:var(--muted);margin-top:4px">Arquivo XML da NF-e emitido pelo fornecedor</div>`;
+    document.getElementById('xml-input').value = '';
     setModoEntrada('xml');
     selecionarPgtoNF('dinheiro');
     await carregarBoletosAbertosNF();
@@ -1315,12 +1341,41 @@
     e.preventDefault();
     document.getElementById('xml-dropzone').style.borderColor = '#c7d4f0';
     const file = e.dataTransfer.files[0];
-    if (file) processarXML(file);
+    if (file) verificarArquivo(file);
   };
 
   window.handleXMLFile = input => {
-    if (input.files[0]) processarXML(input.files[0]);
+    if (input.files[0]) verificarArquivo(input.files[0]);
   };
+
+  function verificarArquivo(file) {
+    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isXML = file.type === 'text/xml' || file.type === 'application/xml' || file.name.toLowerCase().endsWith('.xml');
+    // Oculta aviso anterior
+    document.getElementById('aviso-pdf').style.display = 'none';
+    if (isPDF) {
+      // Mostra aviso e sugere entrada manual
+      document.getElementById('aviso-pdf').style.display = 'block';
+      document.getElementById('xml-dropzone').style.borderColor = '#fcd34d';
+      document.getElementById('xml-dropzone-content').innerHTML =
+        `<div style="font-size:28px;margin-bottom:6px">📄</div>
+         <div style="font-size:13px;font-weight:600;color:#b45309">${file.name}</div>
+         <div style="font-size:11px;color:var(--muted);margin-top:4px">Arquivo PDF detectado</div>`;
+      // Reset input para permitir nova seleção
+      document.getElementById('xml-input').value = '';
+      return;
+    }
+    if (isXML) {
+      processarXML(file);
+      return;
+    }
+    // Arquivo não reconhecido
+    document.getElementById('xml-dropzone-content').innerHTML =
+      `<div style="font-size:28px;margin-bottom:6px">❌</div>
+       <div style="font-size:13px;font-weight:600;color:#dc2626">Formato não suportado</div>
+       <div style="font-size:11px;color:var(--muted);margin-top:4px">Selecione um arquivo .xml da NF-e</div>`;
+    document.getElementById('xml-input').value = '';
+  }
 
   function processarXML(file) {
     const reader = new FileReader();
