@@ -1078,7 +1078,9 @@
   setInterval(() => {
     const dashAtivo = !document.getElementById('aba-dashboard').classList.contains('hidden');
     if (dashAtivo) carregarDashboard();
-  }, 60000);
+    const caixaAtivo = !document.getElementById('aba-caixa').classList.contains('hidden');
+    if (caixaAtivo) carregarCaixa();
+  }, 15000);
 
   // ABAS
   window.abrirAba = (aba, btn) => {
@@ -1607,8 +1609,10 @@
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
     const fmtDt = ts => ts ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
 
-    // Prontos sem pagamento
-    const prontos = todos.filter(p => p.status === 'pronto' && !p.pago);
+    // Todos os pedidos não pagos (independente do status da cozinha)
+    const prontos = todos.filter(p =>
+      !p.pago && p.status !== 'entregue'
+    ).sort((a,b) => (a.criadoEm?.seconds||0) - (b.criadoEm?.seconds||0));
     // Finalizados hoje
     const finalizados = todos.filter(p => p.pago && p.pagoEm && p.pagoEm.toDate() >= hoje)
       .sort((a,b) => (b.pagoEm?.seconds||0) - (a.pagoEm?.seconds||0));
@@ -1635,7 +1639,14 @@
                 <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:1px">#${p.id.slice(-4).toUpperCase()}</div>
                 <div style="font-size:12px;color:rgba(255,255,255,.5)">Mesa ${p.mesa}</div>
               </div>
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#f5c518;letter-spacing:1px">${fmt(p.total||0)}</div>
+              <div style="text-align:right">
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#f5c518;letter-spacing:1px">${fmt(p.total||0)}</div>
+                <div style="font-size:11px;margin-top:2px">${
+                  p.status==='novo' ? '<span style="background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:8px;font-weight:700">Novo</span>'
+                  : p.status==='preparo' ? '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-weight:700">Em preparo</span>'
+                  : '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:8px;font-weight:700">✓ Pronto</span>'
+                }</div>
+              </div>
             </div>
             <div style="padding:12px 16px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border)">${itensStr}</div>
             ${addStr.length?`<div style="padding:6px 16px;font-size:11px;color:#d97706">+ ${addStr.join(', ')}</div>`:''}
