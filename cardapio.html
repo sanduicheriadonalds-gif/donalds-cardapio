@@ -145,6 +145,31 @@
   .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--azul);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
   @keyframes spin{to{transform:rotate(360deg)}}
 
+  /* TELA IDENTIFICAÇÃO */
+  #tela-identificacao{min-height:100vh;background:var(--azul);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+  .id-card{background:#fff;border-radius:20px;width:100%;max-width:400px;overflow:hidden}
+  .id-header{background:var(--azul);padding:24px 20px 20px;text-align:center;border-bottom:3px solid var(--ouro)}
+  .id-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:4px}
+  .id-sub{font-size:9px;color:var(--ouro);letter-spacing:6px;margin-top:2px}
+  .id-body{padding:24px 20px}
+  .id-titulo{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--azul);letter-spacing:2px;margin-bottom:4px}
+  .id-desc{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+  .id-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;color:var(--text);outline:none;margin-bottom:10px;transition:border-color .2s}
+  .id-input:focus{border-color:var(--azul)}
+  .id-btn{width:100%;padding:14px;background:var(--azul);color:var(--ouro);border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;margin-bottom:10px;transition:opacity .2s}
+  .id-btn:hover{opacity:.9}
+  .id-pular{width:100%;padding:10px;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:underline}
+  .id-fidelidade{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start}
+  .id-fidelidade-txt{font-size:12px;color:#854d0e;line-height:1.5}
+  .pontos-bar{background:rgba(245,197,24,.1);border-top:1px solid rgba(245,197,24,.15);padding:8px 16px;display:flex;align-items:center;justify-content:space-between}
+  .pontos-nome{font-size:11px;color:rgba(255,255,255,.7)}
+  .pontos-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--ouro);letter-spacing:1px}
+  .pontos-btn{font-size:10px;color:var(--ouro);background:rgba(245,197,24,.15);border:1px solid rgba(245,197,24,.3);border-radius:12px;padding:3px 10px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600}
+  .modal-pontos{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:420px;padding:24px}
+  .pts-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .pts-item:last-child{border-bottom:none}
+  .pts-ganhos{color:#16a34a;font-weight:700}
+
   @media(max-width:400px){
     .item-img{width:84px}
     .item-img .emoji-fallback{font-size:32px}
@@ -152,6 +177,55 @@
 </style>
 </head>
 <body>
+
+<!-- TELA IDENTIFICAÇÃO -->
+<div id="tela-identificacao" style="display:none">
+  <div class="id-card">
+    <div class="id-header">
+      <div class="id-logo">DONALDS'</div>
+      <div class="id-sub">SANDUICHERIA</div>
+    </div>
+    <div class="id-body">
+      <div class="id-titulo">BEM-VINDO!</div>
+      <div class="id-desc">Identifique-se para participar do programa de fidelidade e acumular pontos.</div>
+      <div class="id-fidelidade">
+        <div style="font-size:20px;flex-shrink:0">⭐</div>
+        <div class="id-fidelidade-txt">
+          <strong>Programa Fidelidade:</strong> A cada R$ 1,00 gasto você acumula 1 ponto.<br>
+          Sem cadastro você ainda pode fazer seu pedido, mas não acumula pontos.
+        </div>
+      </div>
+      <input class="id-input" type="text" id="id-nome" placeholder="Seu nome" autocomplete="name"/>
+      <input class="id-input" type="tel" id="id-celular" placeholder="Celular (ex: 62 99999-9999)" autocomplete="tel" oninput="formatarCelular(this)"/>
+      <input class="id-input" type="text" id="id-cpf" placeholder="CPF (opcional)" autocomplete="off" oninput="formatarCPF(this)"/>
+      <button class="id-btn" onclick="identificarCliente()">ENTRAR E ACUMULAR PONTOS</button>
+      <button class="id-pular" onclick="pularIdentificacao()">Continuar sem identificação</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PONTOS -->
+<div class="modal-overlay" id="modal-pontos" style="display:none" onclick="if(event.target===this)fecharPontos()">
+  <div class="modal-pontos">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul);letter-spacing:2px" id="pts-modal-nome"></div>
+        <div style="font-size:12px;color:var(--muted)" id="pts-modal-celular"></div>
+      </div>
+      <button onclick="fecharPontos()" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">×</button>
+    </div>
+    <!-- Card de pontos -->
+    <div style="background:var(--azul);border-radius:14px;padding:20px;margin-bottom:16px;text-align:center">
+      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Seus pontos</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--ouro);letter-spacing:2px" id="pts-modal-total">0</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">R$ 1 gasto = 1 ponto</div>
+    </div>
+    <!-- Histórico -->
+    <div style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Histórico de visitas</div>
+    <div id="pts-historico" style="max-height:200px;overflow-y:auto"></div>
+    <button onclick="fecharPontos()" style="width:100%;margin-top:16px;padding:13px;background:var(--azul);color:var(--ouro);border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer">VOLTAR AO CARDÁPIO</button>
+  </div>
+</div>
 
 <!-- MODAL ADICIONAIS -->
 <div class="modal-overlay" id="modal-adicionais" style="display:none" onclick="if(event.target===this)fecharAdicionais()">
@@ -170,7 +244,7 @@
 </div>
 
 <!-- TELA CARDÁPIO -->
-<div id="tela-cardapio">
+<div id="tela-cardapio" style="display:none">
   <div class="header">
     <div class="header-top">
       <div class="mesa-tag" id="mesa-tag">Mesa —</div>
@@ -188,6 +262,17 @@
         <path d="M10 10l4 4" stroke="rgba(255,255,255,.5)" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
       <input type="text" id="busca-input" placeholder="Buscar no cardápio..." oninput="buscar(this.value)"/>
+    </div>
+    <!-- Barra de pontos (só aparece quando identificado) -->
+    <div class="pontos-bar" id="pontos-bar" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">⭐</span>
+        <div>
+          <div class="pontos-nome" id="pontos-nome-txt">Olá!</div>
+          <div class="pontos-val"><span id="pontos-total-txt">0</span> pontos</div>
+        </div>
+      </div>
+      <button class="pontos-btn" onclick="abrirPontos()">Ver histórico</button>
     </div>
   </div>
 
@@ -249,6 +334,12 @@
     <div class="sucesso-titulo">PEDIDO CONFIRMADO!</div>
     <div class="sucesso-num" id="sucesso-num">#000</div>
     <div class="sucesso-sub">Seu pedido foi enviado para a cozinha. Avisamos quando estiver pronto!</div>
+    <!-- Card de pontos ganhos -->
+    <div id="sucesso-pontos" style="display:none;background:var(--azul);border-radius:14px;padding:16px 24px;width:100%;text-align:center">
+      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Pontos acumulados</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--ouro);letter-spacing:2px" id="sucesso-pontos-val">+0 pontos</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px" id="sucesso-pontos-total"></div>
+    </div>
     <div class="eta-card">
       <div class="eta-label">Previsão de entrega</div>
       <div class="eta-val">~20 MIN</div>
@@ -260,7 +351,7 @@
 <!-- FIREBASE SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, addDoc, serverTimestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, getDoc, setDoc, serverTimestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
@@ -278,6 +369,137 @@
   const params = new URLSearchParams(window.location.search);
   const mesa = params.get('mesa') || '1';
   document.getElementById('mesa-tag').textContent = 'Mesa ' + mesa;
+
+  // ===== CLIENTE / FIDELIDADE =====
+  let clienteAtual = null; // {id, nome, celular, cpf, pontos}
+
+  // Formatar celular
+  window.formatarCelular = el => {
+    let v = el.value.replace(/\D/g,'').slice(0,11);
+    if (v.length > 6) v = v.replace(/^(\d{2})(\d{5})(\d{0,4})/,'$1 $2-$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,5})/,'$1 $2');
+    el.value = v;
+  };
+
+  window.formatarCPF = el => {
+    let v = el.value.replace(/\D/g,'').slice(0,11);
+    if (v.length > 9) v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/^(\d{3})(\d{0,3})/,'$1.$2');
+    el.value = v;
+  };
+
+  window.identificarCliente = async () => {
+    const nome = document.getElementById('id-nome').value.trim();
+    const celular = document.getElementById('id-celular').value.replace(/\D/g,'');
+    const cpf = document.getElementById('id-cpf').value.replace(/\D/g,'');
+    if (!nome || celular.length < 10) {
+      alert('Por favor preencha seu nome e celular.');
+      return;
+    }
+    try {
+      // Busca cliente pelo celular
+      const snap = await getDocs(collection(db,'clientes'));
+      const existente = snap.docs.find(d => d.data().celular === celular);
+      if (existente) {
+        // Atualiza dados se necessário
+        clienteAtual = {id: existente.id, ...existente.data()};
+        if (nome && nome !== clienteAtual.nome) {
+          await updateDoc(doc(db,'clientes',existente.id), {nome});
+          clienteAtual.nome = nome;
+        }
+      } else {
+        // Cria novo cliente
+        const ref = await addDoc(collection(db,'clientes'), {
+          nome, celular, cpf: cpf||null,
+          pontos: 0, totalGasto: 0, totalPedidos: 0,
+          criadoEm: serverTimestamp(),
+        });
+        clienteAtual = {id: ref.id, nome, celular, cpf: cpf||null, pontos: 0, totalGasto: 0, totalPedidos: 0};
+      }
+      // Salva no localStorage para reconhecer nas próximas visitas
+      localStorage.setItem('donalds_cliente', JSON.stringify({celular, nome}));
+      mostrarPontosHeader();
+      entrarCardapio();
+    } catch(e) {
+      alert('Erro ao identificar. Tente novamente.');
+    }
+  };
+
+  window.pularIdentificacao = () => {
+    clienteAtual = null;
+    localStorage.removeItem('donalds_cliente');
+    entrarCardapio();
+  };
+
+  function mostrarPontosHeader() {
+    if (!clienteAtual) return;
+    document.getElementById('pontos-bar').style.display = 'flex';
+    document.getElementById('pontos-nome-txt').textContent = `Olá, ${clienteAtual.nome.split(' ')[0]}!`;
+    document.getElementById('pontos-total-txt').textContent = clienteAtual.pontos || 0;
+  }
+
+  window.abrirPontos = async () => {
+    if (!clienteAtual) return;
+    document.getElementById('pts-modal-nome').textContent = clienteAtual.nome;
+    document.getElementById('pts-modal-celular').textContent = clienteAtual.celular;
+    document.getElementById('pts-modal-total').textContent = clienteAtual.pontos || 0;
+    // Busca histórico de pedidos do cliente
+    try {
+      const snap = await getDocs(collection(db,'pedidos'));
+      const pedidos = snap.docs
+        .map(d=>({id:d.id,...d.data()}))
+        .filter(p => p.clienteId === clienteAtual.id)
+        .sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0))
+        .slice(0,10);
+      const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+      const fmtDt = ts => ts ? ts.toDate().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '--';
+      document.getElementById('pts-historico').innerHTML = pedidos.length
+        ? pedidos.map(p => `
+          <div class="pts-item">
+            <div>
+              <div style="font-weight:600">#${p.id.slice(-4).toUpperCase()} · Mesa ${p.mesa}</div>
+              <div style="font-size:11px;color:var(--muted)">${fmtDt(p.criadoEm)}</div>
+            </div>
+            <div style="text-align:right">
+              <div>${fmt(p.total||0)}</div>
+              <div class="pts-ganhos">+${Math.floor(p.total||0)} pts</div>
+            </div>
+          </div>`).join('')
+        : '<div style="color:var(--muted);font-size:13px;padding:10px 0">Nenhum pedido ainda.</div>';
+    } catch(e) {}
+    document.getElementById('modal-pontos').style.display = 'flex';
+  };
+
+  window.fecharPontos = () => {
+    document.getElementById('modal-pontos').style.display = 'none';
+  };
+
+  function entrarCardapio() {
+    document.getElementById('tela-identificacao').style.display = 'none';
+    document.getElementById('tela-cardapio').style.display = 'block';
+  }
+
+  // Verifica se já tem cliente salvo no localStorage
+  async function verificarClienteSalvo() {
+    const salvo = localStorage.getItem('donalds_cliente');
+    if (salvo) {
+      try {
+        const {celular, nome} = JSON.parse(salvo);
+        const snap = await getDocs(collection(db,'clientes'));
+        const existente = snap.docs.find(d => d.data().celular === celular);
+        if (existente) {
+          clienteAtual = {id: existente.id, ...existente.data()};
+          mostrarPontosHeader();
+          entrarCardapio();
+          return;
+        }
+      } catch(e) {}
+    }
+    // Sem cliente salvo — mostra tela de identificação
+    document.getElementById('tela-cardapio').style.display = 'none';
+    document.getElementById('tela-identificacao').style.display = 'flex';
+  }
 
   const CATS = [
     {id:'todos', label:'Todos'},
@@ -596,13 +818,34 @@
         };
       });
       const total = itensPedido.reduce((a, i) => a + i.subtotal, 0);
+      const pontosGanhos = Math.floor(total);
       const ref = await addDoc(collection(db, 'pedidos'), {
         mesa, itens: itensPedido, total,
         observacoes: document.getElementById('obs-input').value,
-        pagamento: null,
-        status: 'novo',
+        pagamento: null, status: 'novo',
+        clienteId: clienteAtual?.id || null,
+        clienteNome: clienteAtual?.nome || null,
+        pontosGanhos: clienteAtual ? pontosGanhos : 0,
         criadoEm: serverTimestamp()
       });
+      // Acumula pontos no cliente
+      if (clienteAtual) {
+        const novos = (clienteAtual.pontos||0) + pontosGanhos;
+        await updateDoc(doc(db,'clientes',clienteAtual.id), {
+          pontos: novos,
+          totalGasto: (clienteAtual.totalGasto||0) + total,
+          totalPedidos: (clienteAtual.totalPedidos||0) + 1,
+          ultimaVisita: serverTimestamp(),
+        });
+        clienteAtual.pontos = novos;
+        document.getElementById('pontos-total-txt').textContent = novos;
+        // Mostra pontos ganhos na tela de sucesso
+        document.getElementById('sucesso-pontos').style.display = 'block';
+        document.getElementById('sucesso-pontos-val').textContent = `+${pontosGanhos} pontos`;
+        document.getElementById('sucesso-pontos-total').textContent = `Total: ${novos} pontos`;
+      } else {
+        document.getElementById('sucesso-pontos').style.display = 'none';
+      }
       document.getElementById('sucesso-num').textContent = '#' + ref.id.slice(-4).toUpperCase();
       document.getElementById('tela-checkout').style.display = 'none';
       document.getElementById('tela-sucesso').style.display = 'block';
@@ -623,6 +866,7 @@
   };
 
   carregarCardapio();
+  verificarClienteSalvo();
 </script>
 </body>
 </html>

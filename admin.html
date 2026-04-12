@@ -153,6 +153,7 @@
     <button class="nav-btn" data-aba="pedidos">Pedidos ao vivo</button>
     <button class="nav-btn" data-aba="financeiro">Financeiro</button>
     <button class="nav-btn" data-aba="qrcodes">QR Codes</button>
+    <button class="nav-btn" data-aba="clientes">Clientes</button>
     <button class="nav-btn" data-aba="caixa">Caixa</button>
     <button class="nav-btn" data-aba="adicionais">Adicionais</button>
     <button class="nav-btn" data-aba="entrada">Entrada de mercadoria</button>
@@ -231,6 +232,28 @@
       <div class="sec-titulo">QR Codes das mesas</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Imprima e cole em cada mesa. O cliente escaneia e abre o cardápio diretamente.</p>
       <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div id="aba-clientes" class="hidden">
+      <div class="sec-titulo" style="margin-bottom:6px">Clientes</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Clientes cadastrados via QR Code com histórico e pontos de fidelidade.</p>
+      <div class="metricas" style="margin-bottom:20px">
+        <div class="metrica"><div class="metrica-label">Total de clientes</div><div class="metrica-val" id="cl-total">0</div></div>
+        <div class="metrica"><div class="metrica-label">Novos este mês</div><div class="metrica-val" id="cl-novos">0</div></div>
+        <div class="metrica"><div class="metrica-label">Total em pontos</div><div class="metrica-val" id="cl-pontos" style="font-size:20px">0</div></div>
+      </div>
+      <!-- Busca -->
+      <div style="margin-bottom:14px">
+        <input type="text" id="cl-busca" placeholder="Buscar por nome ou celular..." oninput="filtrarClientes(this.value)"
+          style="width:100%;max-width:400px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;outline:none"/>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Cliente</th><th>Celular</th><th>CPF</th><th>Pedidos</th><th>Total gasto</th><th>Pontos</th><th>Última visita</th><th>Ações</th></tr></thead>
+          <tbody id="tabela-clientes"><tr><td colspan="8" class="loading-inline">Carregando...</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- CAIXA -->
@@ -1072,7 +1095,7 @@
     if (aba === 'entrada') { carregarMargens(); carregarEntradas(); }
     if (aba === 'boletos') carregarBoletos();
     if (aba === 'caixa') carregarCaixa();
-    if (aba === 'adicionais') carregarAdicionais();
+    if (aba === 'clientes') carregarClientes();
   };
 
   // DASHBOARD
@@ -1472,7 +1495,63 @@
     }).join('');
   }
 
-  // ===== ADICIONAIS =====
+  // ===== CLIENTES =====
+  let clientesCache = [];
+
+  async function carregarClientes() {
+    const snap = await getDocs(collection(db,'clientes'));
+    clientesCache = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b) => (b.pontos||0) - (a.pontos||0));
+    const hoje = new Date();
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const novos = clientesCache.filter(c => c.criadoEm && c.criadoEm.toDate() >= inicioMes).length;
+    const totalPontos = clientesCache.reduce((a,c) => a+(c.pontos||0), 0);
+    document.getElementById('cl-total').textContent = clientesCache.length;
+    document.getElementById('cl-novos').textContent = novos;
+    document.getElementById('cl-pontos').textContent = totalPontos.toLocaleString('pt-BR');
+    renderTabelaClientes(clientesCache);
+  }
+
+  function renderTabelaClientes(lista) {
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const fmtDt = ts => ts ? ts.toDate().toLocaleDateString('pt-BR') : '—';
+    document.getElementById('tabela-clientes').innerHTML = lista.length
+      ? lista.map(c => `<tr>
+          <td><strong>${c.nome||'—'}</strong></td>
+          <td>${c.celular||'—'}</td>
+          <td style="font-size:12px;color:var(--muted)">${c.cpf||'—'}</td>
+          <td>${c.totalPedidos||0}</td>
+          <td>${fmt(c.totalGasto||0)}</td>
+          <td><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--azul)">${c.pontos||0}</span></td>
+          <td style="font-size:12px;color:var(--muted)">${fmtDt(c.ultimaVisita||c.criadoEm)}</td>
+          <td>
+            <button class="btn-sec" data-ajustar-pts="${c.id}" data-pts-atual="${c.pontos||0}" data-pts-nome="${c.nome}">Ajustar pts</button>
+          </td>
+        </tr>`).join('')
+      : '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">Nenhum cliente cadastrado ainda.</td></tr>';
+  }
+
+  window.filtrarClientes = busca => {
+    const b = busca.toLowerCase();
+    const filtrados = clientesCache.filter(c =>
+      (c.nome||'').toLowerCase().includes(b) || (c.celular||'').includes(b)
+    );
+    renderTabelaClientes(filtrados);
+  };
+
+  // Listener para ajustar pontos
+  document.addEventListener('click', e => {
+    const ajustarBtn = e.target.closest('[data-ajustar-pts]');
+    if (ajustarBtn) {
+      const id = ajustarBtn.dataset.ajustarPts;
+      const atual = parseInt(ajustarBtn.dataset.ptsAtual) || 0;
+      const nome = ajustarBtn.dataset.ptsNome;
+      const novo = prompt(`Ajustar pontos de ${nome}\nPontos atuais: ${atual}\n\nDigite o novo valor de pontos:`, atual);
+      if (novo === null) return;
+      const val = parseInt(novo) || 0;
+      updateDoc(doc(db,'clientes',id), {pontos: val}).then(() => carregarClientes());
+    }
+  });
   let adicionalEditandoId = null;
 
   async function carregarAdicionais() {
