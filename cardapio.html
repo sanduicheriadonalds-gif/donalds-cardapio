@@ -728,55 +728,6 @@
   window._filterCat = cat => { catAtiva = cat; buscaAtiva = ''; document.getElementById('busca-input').value = ''; renderCats(); renderLista(); };
   window.buscar = v => { buscaAtiva = v.toLowerCase(); renderLista(); };
 
-  function renderLista() {
-    let lista = [...cardapioData];
-    if (catAtiva !== 'todos') lista = lista.filter(i => i.categoria === catAtiva);
-    if (buscaAtiva) {
-      const b = buscaAtiva.toLowerCase();
-      lista = lista.filter(i => i.nome.toLowerCase().includes(b) || (i.descricao||'').toLowerCase().includes(b));
-    }
-    if (!lista.length) {
-      document.getElementById('lista-container').innerHTML = '<div class="vazio">Nenhum item encontrado.</div>';
-      return;
-    }
-    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
-    document.getElementById('lista-container').innerHTML =
-      '<div class="items">' +
-      lista.map(item => {
-        const entry = carrinho[item.id];
-        const qty = entry ? entry.quantidade : 0;
-        const addNomes = entry?.adicionais?.length ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">+${entry.adicionais.map(a=>a.nome).join(', ')}</div>` : '';
-        const badgeHtml = item.badge === 'hot' ? '<span class="badge badge-hot">quente</span>'
-          : item.badge === 'new' ? '<span class="badge badge-new">novo</span>'
-          : item.badge === 'dest' ? '<span class="badge badge-dest">destaque</span>' : '';
-        const ctrl = qty > 0
-          ? `<div class="qty-ctrl">
-               <button class="qty-btn" onclick="window._chQty('${item.id}',-1)">−</button>
-               <span class="qty-num">${qty}</span>
-               <button class="qty-btn" onclick="window._chQty('${item.id}',1)">+</button>
-             </div>`
-          : `<button class="add-btn" onclick="window._addItem('${item.id}')">+</button>`;
-        const imgHtml = item.foto
-          ? `<img src="${item.foto}" alt="${item.nome}" loading="lazy"/>`
-          : `<span class="emoji-fallback">${item.emoji || '🍔'}</span>`;
-        return `
-          <div class="item">
-            <div class="item-img">${imgHtml}</div>
-            <div class="item-body">
-              <div>
-                <div class="item-nome">${item.nome}${badgeHtml}</div>
-                <div class="item-desc">${item.descricao || ''}</div>
-                ${addNomes}
-              </div>
-              <div class="item-footer">
-                <span class="item-preco">${fmt(item.preco)}</span>
-                ${ctrl}
-              </div>
-            </div>
-          </div>`;
-      }).join('') + '</div>';
-  }
-
   window.abrirCheckout = () => {
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
     const itensHtml = Object.entries(carrinho).map(([id, entry]) => {
