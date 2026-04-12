@@ -554,7 +554,9 @@
 
   // ===== MODAL ADICIONAIS =====
   window._addItem = id => {
-    if (adicionaisData.length > 0) {
+    const item = cardapioData.find(x => x.id === id);
+    const semAdicionais = ['bebidas', 'combos'].includes(item?.categoria);
+    if (adicionaisData.length > 0 && !semAdicionais) {
       // Abre modal de adicionais
       itemPendente = id;
       adicionaisSelecionados = {};
