@@ -1434,7 +1434,7 @@
         ? `<button class="btn-status btn-preparo" data-up-status="${p.id}" data-novo-status="preparo">Iniciar preparo</button>`
         : p.status==='preparo'
         ? `<button class="btn-status btn-pronto" data-up-status="${p.id}" data-novo-status="pronto">Marcar pronto</button>`
-        : `<button class="btn-status" style="background:#f0f0f0;color:#555" data-up-status="${p.id}" data-novo-status="entregue">Entregue</button>`;
+        : `<span style="font-size:11px;color:#15803d;font-weight:700;padding:4px 10px;background:#dcfce7;border-radius:10px">✓ Pronto — aguarda caixa</span>`;
       return `<div class="pedido-card">
         <div class="pedido-card-head">
           <div><div class="pedido-num">#${p.id.slice(-4).toUpperCase()}</div><div class="pedido-mesa">Mesa ${p.mesa} · ${p.pagamento||'—'}</div></div>
