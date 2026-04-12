@@ -226,16 +226,6 @@
         <textarea class="obs-input" id="obs-input" rows="2" placeholder="Ex: sem cebola, maionese à parte, ponto da carne..."></textarea>
       </div>
     </div>
-    <div class="sec">
-      <div class="sec-head"><div class="sec-dot"></div><span class="sec-label">Forma de pagamento</span></div>
-      <div class="sec-content">
-        <div class="pgto-grid">
-          <button class="pgto-btn ativo" onclick="selecionarPgto(this)">PIX</button>
-          <button class="pgto-btn" onclick="selecionarPgto(this)">Cartão</button>
-          <button class="pgto-btn" onclick="selecionarPgto(this)">Dinheiro</button>
-        </div>
-      </div>
-    </div>
     <button class="confirmar-btn" onclick="confirmarPedido()">FAZER PEDIDO</button>
   </div>
 </div>
@@ -299,12 +289,9 @@
 
   let cardapioData = [];
   let adicionaisData = [];
-  let carrinho = {};   // { itemId: { quantidade, adicionais: [{id,nome,preco}] } }
+  let carrinho = {};
   let catAtiva = 'todos';
   let buscaAtiva = '';
-  let pgtoSelecionado = 'PIX';
-
-  // Item pendente para o modal de adicionais
   let itemPendente = null;
   let adicionaisSelecionados = {};
 
@@ -594,12 +581,6 @@
     document.getElementById('tela-cardapio').style.display = 'block';
   };
 
-  window.selecionarPgto = btn => {
-    document.querySelectorAll('.pgto-btn').forEach(b => b.classList.remove('ativo'));
-    btn.classList.add('ativo');
-    pgtoSelecionado = btn.textContent;
-  };
-
   window.confirmarPedido = async () => {
     const btn = document.querySelector('.confirmar-btn');
     btn.textContent = 'ENVIANDO...';
@@ -609,21 +590,16 @@
         const it = cardapioData.find(x => x.id === id);
         const extraPreco = (entry.adicionais||[]).reduce((a,x) => a+x.preco, 0);
         return {
-          id,
-          nome: it.nome,
-          quantidade: entry.quantidade,
-          preco: it.preco,
-          adicionais: entry.adicionais || [],
+          id, nome: it.nome, quantidade: entry.quantidade,
+          preco: it.preco, adicionais: entry.adicionais || [],
           subtotal: (it.preco + extraPreco) * entry.quantidade
         };
       });
       const total = itensPedido.reduce((a, i) => a + i.subtotal, 0);
       const ref = await addDoc(collection(db, 'pedidos'), {
-        mesa,
-        itens: itensPedido,
-        total,
+        mesa, itens: itensPedido, total,
         observacoes: document.getElementById('obs-input').value,
-        pagamento: pgtoSelecionado,
+        pagamento: null,
         status: 'novo',
         criadoEm: serverTimestamp()
       });

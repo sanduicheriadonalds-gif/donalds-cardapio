@@ -153,6 +153,7 @@
     <button class="nav-btn" data-aba="pedidos">Pedidos ao vivo</button>
     <button class="nav-btn" data-aba="financeiro">Financeiro</button>
     <button class="nav-btn" data-aba="qrcodes">QR Codes</button>
+    <button class="nav-btn" data-aba="caixa">Caixa</button>
     <button class="nav-btn" data-aba="adicionais">Adicionais</button>
     <button class="nav-btn" data-aba="entrada">Entrada de mercadoria</button>
     <button class="nav-btn" data-aba="boletos">Boletos</button>
@@ -232,6 +233,35 @@
       <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
     </div>
 
+    <!-- CAIXA -->
+    <div id="aba-caixa" class="hidden">
+      <div class="sec-titulo" style="margin-bottom:6px">Caixa</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Pedidos prontos aguardando pagamento. Selecione a forma de recebimento e finalize.</p>
+
+      <!-- MÉTRICAS DO DIA -->
+      <div class="metricas" style="margin-bottom:20px">
+        <div class="metrica"><div class="metrica-label">Aguardando pagamento</div><div class="metrica-val" id="cx-aguardando" style="color:#d97706">0</div></div>
+        <div class="metrica"><div class="metrica-label">Finalizados hoje</div><div class="metrica-val" id="cx-finalizados">0</div></div>
+        <div class="metrica"><div class="metrica-label">Total recebido hoje</div><div class="metrica-val" id="cx-total">R$ 0</div></div>
+        <div class="metrica"><div class="metrica-label">PIX</div><div class="metrica-val" id="cx-pix" style="font-size:20px">R$ 0</div></div>
+        <div class="metrica"><div class="metrica-label">Cartão</div><div class="metrica-val" id="cx-cartao" style="font-size:20px">R$ 0</div></div>
+        <div class="metrica"><div class="metrica-label">Dinheiro</div><div class="metrica-val" id="cx-dinheiro" style="font-size:20px">R$ 0</div></div>
+      </div>
+
+      <!-- PEDIDOS PRONTOS -->
+      <div class="sec-titulo" style="font-size:16px;margin-bottom:12px">Prontos para pagar <button class="btn-sec" id="btn-atualizar-caixa" style="font-size:11px;padding:5px 12px">Atualizar</button></div>
+      <div id="caixa-prontos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:28px"></div>
+
+      <!-- HISTÓRICO DO DIA -->
+      <div class="sec-titulo" style="font-size:16px;margin-bottom:12px">Finalizados hoje</div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Pedido</th><th>Mesa</th><th>Itens</th><th>Total</th><th>Pagamento</th><th>Horário</th></tr></thead>
+          <tbody id="caixa-historico"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- ADICIONAIS -->
     <div id="aba-adicionais" class="hidden">
       <div class="sec-titulo">
@@ -277,6 +307,47 @@
       <div id="boletos-lista" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL CAIXA — FINALIZAR PAGAMENTO -->
+<div class="modal-overlay hidden" id="modal-caixa">
+  <div class="modal">
+    <div class="modal-titulo">FINALIZAR PAGAMENTO</div>
+    <div style="background:#f8f8f4;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Pedido <strong id="cx-modal-num"></strong> · Mesa <strong id="cx-modal-mesa"></strong></div>
+      <div id="cx-modal-itens" style="font-size:13px;color:var(--text);margin-bottom:8px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:8px">
+        <span style="font-size:13px;font-weight:700">Total</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--azul);letter-spacing:1px" id="cx-modal-total"></span>
+      </div>
+    </div>
+    <div class="campo"><label>Forma de pagamento</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <button class="pgto-btn ativo" id="cx-pgto-pix" onclick="selecionarPgtoCaixa('PIX')">PIX</button>
+        <button class="pgto-btn" id="cx-pgto-cartao" onclick="selecionarPgtoCaixa('Cartão')">Cartão</button>
+        <button class="pgto-btn" id="cx-pgto-dinheiro" onclick="selecionarPgtoCaixa('Dinheiro')">Dinheiro</button>
+      </div>
+      <input type="hidden" id="cx-pgto-val" value="PIX"/>
+    </div>
+    <!-- Troco (só aparece para dinheiro) -->
+    <div id="cx-troco-wrap" style="display:none">
+      <div class="campo-row">
+        <div class="campo"><label>Valor recebido (R$)</label>
+          <input type="number" id="cx-recebido" step="0.01" min="0" placeholder="Ex: 50,00" oninput="calcularTroco()"/>
+        </div>
+        <div class="campo"><label>Troco</label>
+          <input type="text" id="cx-troco" readonly style="background:#f0fdf4;color:#15803d;font-weight:700;font-size:15px"/>
+        </div>
+      </div>
+    </div>
+    <div class="campo"><label>Observação (opcional)</label>
+      <input type="text" id="cx-obs" placeholder="Ex: pago com desconto, cortesia..."/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-caixa')">Cancelar</button>
+      <button class="btn-prim" onclick="finalizarPagamento()" style="flex:1;padding:13px;font-size:15px">Confirmar recebimento</button>
+    </div>
   </div>
 </div>
 
@@ -906,6 +977,35 @@
     if (id === 'btn-nova-entrada') window.abrirModalEntrada();
     if (id === 'btn-atualizar-pedidos') window.carregarPedidos();
     if (id === 'btn-novo-adicional') window.abrirModalAdicional();
+    if (id === 'btn-atualizar-caixa') carregarCaixa();
+
+    // Caixa — abrir modal de pagamento
+    const caixaId = e.target.closest('[data-caixa-id]')?.dataset?.caixaId;
+    if (caixaId) {
+      getDocs(collection(db,'pedidos')).then(snap => {
+        const d = snap.docs.find(x => x.id === caixaId);
+        if (!d) return;
+        pedidoCaixaAtual = {id: caixaId, ...d.data()};
+        const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+        document.getElementById('cx-modal-num').textContent = '#' + caixaId.slice(-4).toUpperCase();
+        document.getElementById('cx-modal-mesa').textContent = pedidoCaixaAtual.mesa;
+        document.getElementById('cx-modal-total').textContent = fmt(pedidoCaixaAtual.total||0);
+        document.getElementById('cx-modal-itens').innerHTML =
+          (pedidoCaixaAtual.itens||[]).map(i => {
+            const adds = (i.adicionais||[]).map(a=>a.nome).join(', ');
+            return `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px">
+              <div>${i.quantidade}x ${i.nome}${adds?`<span style="font-size:11px;color:var(--muted)"> + ${adds}</span>`:''}</div>
+              <div style="color:var(--muted)">${fmt(i.subtotal||i.preco*i.quantidade)}</div>
+            </div>`;
+          }).join('');
+        document.getElementById('cx-obs').value = '';
+        document.getElementById('cx-recebido').value = '';
+        document.getElementById('cx-troco').value = '';
+        document.getElementById('cx-troco-wrap').style.display = 'none';
+        selecionarPgtoCaixa('PIX');
+        document.getElementById('modal-caixa').classList.remove('hidden');
+      });
+    }
 
     // Cardápio
     const editarId = e.target.dataset?.editar || e.target.closest('[data-editar]')?.dataset?.editar;
@@ -971,6 +1071,7 @@
     if (aba === 'dashboard') carregarDashboard();
     if (aba === 'entrada') { carregarMargens(); carregarEntradas(); }
     if (aba === 'boletos') carregarBoletos();
+    if (aba === 'caixa') carregarCaixa();
     if (aba === 'adicionais') carregarAdicionais();
   };
 
@@ -1415,6 +1516,111 @@
     }
     fecharModal('modal-adicional');
     carregarAdicionais();
+  };
+
+  // ===== CAIXA =====
+  let pedidoCaixaAtual = null;
+
+  async function carregarCaixa() {
+    const snap = await getDocs(collection(db,'pedidos'));
+    const todos = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const fmtDt = ts => ts ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
+
+    // Prontos sem pagamento
+    const prontos = todos.filter(p => p.status === 'pronto' && !p.pago);
+    // Finalizados hoje
+    const finalizados = todos.filter(p => p.pago && p.pagoEm && p.pagoEm.toDate() >= hoje)
+      .sort((a,b) => (b.pagoEm?.seconds||0) - (a.pagoEm?.seconds||0));
+
+    // Métricas
+    const totalHoje = finalizados.reduce((a,p)=>a+(p.total||0),0);
+    const porPgto = {PIX:0, Cartão:0, Dinheiro:0};
+    finalizados.forEach(p => { if(porPgto[p.pagamento]!==undefined) porPgto[p.pagamento]+=(p.total||0); });
+    document.getElementById('cx-aguardando').textContent = prontos.length;
+    document.getElementById('cx-finalizados').textContent = finalizados.length;
+    document.getElementById('cx-total').textContent = fmt(totalHoje);
+    document.getElementById('cx-pix').textContent = fmt(porPgto['PIX']);
+    document.getElementById('cx-cartao').textContent = fmt(porPgto['Cartão']);
+    document.getElementById('cx-dinheiro').textContent = fmt(porPgto['Dinheiro']);
+
+    // Cards de prontos
+    document.getElementById('caixa-prontos').innerHTML = prontos.length
+      ? prontos.sort((a,b)=>(a.criadoEm?.seconds||0)-(b.criadoEm?.seconds||0)).map(p => {
+          const itensStr = (p.itens||[]).map(i=>`${i.quantidade}x ${i.nome}`).join(' · ');
+          const addStr = (p.itens||[]).flatMap(i=>(i.adicionais||[]).map(a=>a.nome)).filter(Boolean);
+          return `<div style="background:#fff;border:2px solid #f5c518;border-radius:var(--radius);overflow:hidden">
+            <div style="background:#0d2654;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:1px">#${p.id.slice(-4).toUpperCase()}</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.5)">Mesa ${p.mesa}</div>
+              </div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#f5c518;letter-spacing:1px">${fmt(p.total||0)}</div>
+            </div>
+            <div style="padding:12px 16px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border)">${itensStr}</div>
+            ${addStr.length?`<div style="padding:6px 16px;font-size:11px;color:#d97706">+ ${addStr.join(', ')}</div>`:''}
+            ${p.observacoes?`<div style="padding:6px 16px;font-size:11px;color:#854d0e;background:#fffbeb">Obs: ${p.observacoes}</div>`:''}
+            <div style="padding:10px 16px">
+              <button class="btn-prim" style="width:100%;padding:12px;font-size:14px" data-caixa-id="${p.id}">
+                Receber pagamento
+              </button>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius)">Nenhum pedido aguardando pagamento</div>';
+
+    // Histórico
+    document.getElementById('caixa-historico').innerHTML = finalizados.length
+      ? finalizados.map(p => {
+          const pgtoTag = p.pagamento==='PIX'
+            ? '<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">PIX</span>'
+            : p.pagamento==='Cartão'
+            ? '<span style="background:#dbeafe;color:#1e40af;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">Cartão</span>'
+            : '<span style="background:#fef9c3;color:#854d0e;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">Dinheiro</span>';
+          return `<tr>
+            <td><strong>#${p.id.slice(-4).toUpperCase()}</strong></td>
+            <td>Mesa ${p.mesa}</td>
+            <td style="font-size:12px;color:var(--muted)">${(p.itens||[]).length} item(s)</td>
+            <td style="font-weight:700">${fmt(p.total||0)}</td>
+            <td>${pgtoTag}${p.obsFinanceiro?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${p.obsFinanceiro}</div>`:''}</td>
+            <td style="font-size:12px;color:var(--muted)">${fmtDt(p.pagoEm)}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">Nenhum pagamento finalizado hoje.</td></tr>';
+  }
+
+  window.selecionarPgtoCaixa = tipo => {
+    ['PIX','Cartão','Dinheiro'].forEach(t => {
+      document.getElementById('cx-pgto-' + t.toLowerCase().replace('ã','a'))?.classList.toggle('ativo', t === tipo);
+    });
+    document.getElementById('cx-pgto-val').value = tipo;
+    document.getElementById('cx-troco-wrap').style.display = tipo === 'Dinheiro' ? 'block' : 'none';
+    calcularTroco();
+  };
+
+  window.calcularTroco = () => {
+    const recebido = parseFloat(document.getElementById('cx-recebido')?.value) || 0;
+    const total = pedidoCaixaAtual?.total || 0;
+    const troco = recebido - total;
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    document.getElementById('cx-troco').value = troco >= 0 ? fmt(troco) : '—';
+    document.getElementById('cx-troco').style.color = troco >= 0 ? '#15803d' : '#dc2626';
+  };
+
+  window.finalizarPagamento = async () => {
+    if (!pedidoCaixaAtual) return;
+    const pgto = document.getElementById('cx-pgto-val').value;
+    await updateDoc(doc(db,'pedidos',pedidoCaixaAtual.id), {
+      pago: true,
+      pagamento: pgto,
+      pagoEm: serverTimestamp(),
+      obsFinanceiro: document.getElementById('cx-obs').value || null,
+      status: 'entregue',
+    });
+    fecharModal('modal-caixa');
+    carregarCaixa();
+    carregarDashboard();
   };
 
   window.fecharModal = id => document.getElementById(id).classList.add('hidden');
