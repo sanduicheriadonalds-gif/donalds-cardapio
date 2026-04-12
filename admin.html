@@ -156,6 +156,7 @@
     <button class="nav-btn" data-aba="pedidos">Pedidos ao vivo</button>
     <button class="nav-btn" data-aba="financeiro">Financeiro</button>
     <button class="nav-btn" data-aba="qrcodes">QR Codes</button>
+    <button class="nav-btn" data-aba="adicionais">Adicionais</button>
     <button class="nav-btn" data-aba="entrada">Entrada de mercadoria</button>
     <button class="nav-btn" data-aba="boletos">Boletos</button>
   </div>
@@ -234,6 +235,21 @@
       <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
     </div>
 
+    <!-- ADICIONAIS -->
+    <div id="aba-adicionais" class="hidden">
+      <div class="sec-titulo">
+        Adicionais
+        <button class="btn-prim" id="btn-novo-adicional">+ Novo adicional</button>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Itens sugeridos ao cliente ao adicionar qualquer lanche ao carrinho. Ex: ovo frito, bacon extra, queijo duplo, fritas...</p>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Nome</th><th>Preço</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tabela-adicionais"><tr><td colspan="4" class="loading-inline">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- ENTRADA DE MERCADORIA -->
     <div id="aba-entrada" class="hidden">
 
@@ -264,6 +280,29 @@
       <div id="boletos-lista" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL ADICIONAL -->
+<div class="modal-overlay hidden" id="modal-adicional">
+  <div class="modal">
+    <div class="modal-titulo" id="modal-adicional-titulo">NOVO ADICIONAL</div>
+    <div class="campo"><label>Nome do adicional</label>
+      <input type="text" id="add-nome" placeholder="Ex: Ovo frito, Bacon extra, Queijo duplo..."/>
+    </div>
+    <div class="campo"><label>Preço (R$)</label>
+      <input type="number" id="add-preco" step="0.01" min="0" placeholder="Ex: 3,00"/>
+    </div>
+    <div class="campo"><label>Status</label>
+      <select id="add-status">
+        <option value="true">Ativo (aparece nas sugestões)</option>
+        <option value="false">Inativo (oculto)</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-adicional')">Cancelar</button>
+      <button class="btn-prim" onclick="salvarAdicional()">Salvar</button>
+    </div>
   </div>
 </div>
 
@@ -811,6 +850,7 @@
     if (id === 'btn-novo-ingrediente') window.abrirModalEstoque();
     if (id === 'btn-nova-entrada') window.abrirModalEntrada();
     if (id === 'btn-atualizar-pedidos') window.carregarPedidos();
+    if (id === 'btn-novo-adicional') window.abrirModalAdicional();
 
     // Cardápio
     const editarId = e.target.dataset?.editar || e.target.closest('[data-editar]')?.dataset?.editar;
@@ -827,6 +867,28 @@
     if (ajustarBtn) {
       const d = ajustarBtn.dataset;
       window._ajustarEstoque(d.ajustarEst, d.nome, parseFloat(d.qtd), d.unidade);
+    }
+
+    // Adicionais
+    const editarAdd = e.target.closest('[data-editar-add]')?.dataset?.editarAdd;
+    if (editarAdd) {
+      getDocs(collection(db,'adicionais')).then(snap => {
+        const d = snap.docs.find(x => x.id === editarAdd);
+        if (!d) return;
+        const it = d.data();
+        adicionalEditandoId = editarAdd;
+        document.getElementById('modal-adicional-titulo').textContent = 'EDITAR ADICIONAL';
+        document.getElementById('add-nome').value = it.nome || '';
+        document.getElementById('add-preco').value = it.preco || '';
+        document.getElementById('add-status').value = it.ativo !== false ? 'true' : 'false';
+        document.getElementById('modal-adicional').classList.remove('hidden');
+      });
+    }
+    const deletarAdd = e.target.closest('[data-deletar-add]')?.dataset?.deletarAdd;
+    if (deletarAdd) {
+      if (confirm('Excluir este adicional?')) {
+        deleteDoc(doc(db,'adicionais',deletarAdd)).then(() => carregarAdicionais());
+      }
     }
 
     // Pedidos ao vivo — status
@@ -854,6 +916,7 @@
     if (aba === 'dashboard') carregarDashboard();
     if (aba === 'entrada') { carregarMargens(); carregarEntradas(); }
     if (aba === 'boletos') carregarBoletos();
+    if (aba === 'adicionais') carregarAdicionais();
   };
 
   // DASHBOARD
@@ -1257,6 +1320,52 @@
       </div>`;
     }).join('');
   }
+
+  // ===== ADICIONAIS =====
+  let adicionalEditandoId = null;
+
+  async function carregarAdicionais() {
+    const snap = await getDocs(collection(db,'adicionais'));
+    const itens = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.ordem||99)-(b.ordem||99));
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    document.getElementById('tabela-adicionais').innerHTML = itens.map(it => `
+      <tr>
+        <td><strong>${it.nome}</strong></td>
+        <td>${fmt(it.preco||0)}</td>
+        <td><span class="tag ${it.ativo!==false?'tag-ativo':'tag-inativo'}">${it.ativo!==false?'Ativo':'Inativo'}</span></td>
+        <td><div style="display:flex;gap:6px">
+          <button class="btn-sec" data-editar-add="${it.id}">Editar</button>
+          <button class="btn-danger" data-deletar-add="${it.id}">Excluir</button>
+        </div></td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;padding:20px;color:#aaa">Nenhum adicional cadastrado.</td></tr>';
+  }
+
+  window.abrirModalAdicional = () => {
+    adicionalEditandoId = null;
+    document.getElementById('modal-adicional-titulo').textContent = 'NOVO ADICIONAL';
+    document.getElementById('add-nome').value = '';
+    document.getElementById('add-preco').value = '';
+    document.getElementById('add-status').value = 'true';
+    document.getElementById('modal-adicional').classList.remove('hidden');
+  };
+
+  window.salvarAdicional = async () => {
+    const snap = await getDocs(collection(db,'adicionais'));
+    const dados = {
+      nome: document.getElementById('add-nome').value.trim(),
+      preco: parseFloat(document.getElementById('add-preco').value) || 0,
+      ativo: document.getElementById('add-status').value === 'true',
+      ordem: snap.size + 1,
+    };
+    if (!dados.nome) { alert('Digite o nome do adicional.'); return; }
+    if (adicionalEditandoId) {
+      await updateDoc(doc(db,'adicionais',adicionalEditandoId), dados);
+    } else {
+      await addDoc(collection(db,'adicionais'), dados);
+    }
+    fecharModal('modal-adicional');
+    carregarAdicionais();
+  };
 
   window.fecharModal = id => document.getElementById(id).classList.add('hidden');
 
