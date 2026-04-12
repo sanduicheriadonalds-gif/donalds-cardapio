@@ -50,7 +50,9 @@
   .acao-btn.pronto:hover{background:#166534}
   .acao-btn.entregue{background:#1e1e1e;color:#666}
   .acao-btn.entregue:hover{background:#2a2a2a;color:#999}
-  .vazio{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius)}
+  .item-receita{padding:2px 0 6px 24px;display:flex;flex-wrap:wrap;gap:4px}
+  .receita-tag{font-size:10px;background:#1e1e1e;color:#888;padding:2px 7px;border-radius:10px;border:1px solid #2a2a2a}
+  .receita-tag.adicional{background:#1c1800;color:#f59e0b;border-color:#3a3000}
   .novo-alerta{position:fixed;top:80px;right:20px;background:#f59e0b;color:#000;padding:12px 20px;border-radius:10px;font-weight:700;font-size:14px;display:none;z-index:999;animation:fadeIn .3s}
   @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
   @media(max-width:900px){.colunas{grid-template-columns:1fr;padding:12px}}
@@ -94,7 +96,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, updateDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, updateDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
@@ -124,7 +126,7 @@
     return `<span style="color:#ef4444">${diff} min !</span>`;
   };
 
-  // Som de notificação via Web Audio API (sem arquivo externo)
+  // Som de notificação
   function tocarSom() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -142,6 +144,36 @@
     } catch(e) {}
   }
 
+  // Cache do cardápio para pegar receitas
+  let cardapioMap = {};
+
+  async function carregarCardapioCache() {
+    const snap = await getDocs(collection(db,'cardapio'));
+    snap.docs.forEach(d => { cardapioMap[d.id] = d.data(); });
+    // Também indexa por nome (lowercase) para fallback
+    snap.docs.forEach(d => { cardapioMap[d.data().nome?.toLowerCase()] = d.data(); });
+  }
+
+  function getReceita(item) {
+    // Tenta pelo id primeiro, depois pelo nome
+    const card = cardapioMap[item.id] || cardapioMap[item.nome?.toLowerCase()];
+    return card?.receita || [];
+  }
+
+  function renderIngredientes(item) {
+    const receita = getReceita(item);
+    const adicionais = item.adicionais || [];
+    if (!receita.length && !adicionais.length) return '';
+
+    const tags = receita.map(r =>
+      `<span class="receita-tag">${r.quantidade} ${r.unidadeUso||r.unidade} ${r.nome}</span>`
+    ).join('');
+    const addTags = adicionais.map(a =>
+      `<span class="receita-tag adicional">+ ${a.nome}</span>`
+    ).join('');
+    return `<div class="item-receita">${tags}${addTags}</div>`;
+  }
+
   let ultimoCount = 0;
   let primeiraCarregada = false;
 
@@ -149,7 +181,6 @@
     const grupos = {novo:[], preparo:[], pronto:[]};
     pedidos.forEach(p => { if (grupos[p.status]) grupos[p.status].push(p); });
 
-    // Alerta + som de novo pedido (só após primeira carga)
     if (primeiraCarregada && grupos.novo.length > ultimoCount) {
       const alerta = document.getElementById('novo-alerta');
       alerta.style.display = 'block';
@@ -169,11 +200,14 @@
         col.innerHTML = `<div class="vazio">Nenhum pedido aqui</div>`;
         return;
       }
-      // Ordena por tempo de criação (mais antigos primeiro)
       const ordenados = [...grupos[status]].sort((a,b) => (a.criadoEm?.seconds||0) - (b.criadoEm?.seconds||0));
       col.innerHTML = ordenados.map(p => {
-        const itensHtml = (p.itens||[]).map(i =>
-          `<div class="item-linha"><span class="item-qty">${i.quantidade}x</span><span>${i.nome}</span></div>`
+        const itensHtml = (p.itens||[]).map(i => `
+          <div class="item-linha">
+            <span class="item-qty">${i.quantidade}x</span>
+            <span>${i.nome}</span>
+          </div>
+          ${renderIngredientes(i)}`
         ).join('');
         const obsHtml = p.observacoes ? `<div class="obs">Obs: ${p.observacoes}</div>` : '';
         const acao = status === 'novo'
@@ -203,22 +237,24 @@
     });
   }
 
-  // Listener em tempo real — sem orderBy para evitar erro de índice
-  onSnapshot(collection(db,'pedidos'), snap => {
-    const pedidos = snap.docs
-      .map(d => ({id:d.id,...d.data()}))
-      .filter(p => p.status !== 'entregue')
-      .sort((a,b) => (b.criadoEm?.seconds||0) - (a.criadoEm?.seconds||0))
-      .slice(0, 40);
-    renderPedidos(pedidos);
+  // Carrega receitas e depois ouve pedidos em tempo real
+  carregarCardapioCache().then(() => {
+    onSnapshot(collection(db,'pedidos'), snap => {
+      const pedidos = snap.docs
+        .map(d => ({id:d.id,...d.data()}))
+        .filter(p => p.status !== 'entregue')
+        .sort((a,b) => (b.criadoEm?.seconds||0) - (a.criadoEm?.seconds||0))
+        .slice(0, 40);
+      renderPedidos(pedidos);
+    });
   });
 
   window._upStatus = async (id, status) => {
     await updateDoc(doc(db,'pedidos',id), { status });
   };
 
-  // Fix onclick no header com type="module"
-  document.querySelector('.atualizar-btn')?.addEventListener('click', () => {});
+  // Recarrega receitas a cada 5 min (caso admin atualize o cardápio)
+  setInterval(carregarCardapioCache, 300000);
 </script>
 </body>
 </html>
