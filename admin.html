@@ -314,7 +314,7 @@
     <div class="campo-row">
       <div class="campo"><label>Preço (R$)</label><input type="number" id="item-preco" step="0.01" placeholder="0,00"/></div>
       <div class="campo"><label>Categoria</label>
-        <select id="item-cat">
+        <select id="item-cat" onchange="onChangeCatItem()">
           <option value="classicos">Clássicos</option>
           <option value="especiais">Especiais</option>
           <option value="combos">Combos</option>
@@ -349,6 +349,44 @@
         <option value="false">Inativo (oculto)</option>
       </select>
     </div>
+
+    <!-- SEÇÃO COMBO — só aparece quando categoria = combos -->
+    <div id="secao-combo" style="display:none;background:#f0f4ff;border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">Itens do combo</div>
+      <div id="combo-itens-lista" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <select id="combo-item-sel" style="flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;outline:none;background:#fff">
+          <option value="">Selecione um item do cardápio...</option>
+        </select>
+        <button class="btn-sec" style="white-space:nowrap;padding:8px 12px" onclick="adicionarItemCombo()">+ Add</button>
+      </div>
+      <!-- Calculadora de preço -->
+      <div id="combo-calc" style="display:none;background:#fff;border-radius:10px;padding:12px;border:1px solid #c7d4f0">
+        <div style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Calculadora de preço</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:4px">
+          <span>Soma dos itens:</span>
+          <span id="combo-soma" style="font-weight:600;color:var(--text)">R$ 0,00</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-size:13px;color:var(--muted)">Desconto:</span>
+          <input type="range" id="combo-desc-slider" min="0" max="50" step="5" value="10"
+            oninput="document.getElementById('combo-desc-num').value=this.value;calcularCombo()"
+            style="flex:1"/>
+          <input type="number" id="combo-desc-num" value="10" min="0" max="50"
+            oninput="document.getElementById('combo-desc-slider').value=this.value;calcularCombo()"
+            style="width:54px;padding:5px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:center;font-family:inherit"/>
+          <span style="font-size:12px;color:var(--muted)">%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:700;color:var(--azul)">Preço sugerido:</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="combo-preco-sug" style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#16a34a;letter-spacing:1px">R$ 0,00</span>
+            <button class="btn-sec" style="padding:5px 10px;font-size:11px" onclick="aplicarPrecoCombo()">Usar este preço</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="campo">
       <label>Ingredientes da receita</label>
       <div class="receita-lista" id="receita-lista"></div>
@@ -671,6 +709,7 @@
 
   let estoqueCache = [];
   let receitaAtual = [];
+  let comboItens = []; // [{id, nome, preco}]
   let itemEditandoId = null;
   let fotoAtualUrl = null;
   let estEditandoId = null;
@@ -715,6 +754,79 @@
 
   window._updateQtdReceita = (i, val) => { receitaAtual[i].quantidade = parseFloat(val) || 0; };
   window._removerReceita = i => { receitaAtual.splice(i,1); renderReceita(); };
+
+  // ===== COMBO =====
+  window.onChangeCatItem = () => {
+    const isCombo = document.getElementById('item-cat').value === 'combos';
+    document.getElementById('secao-combo').style.display = isCombo ? 'block' : 'none';
+    if (isCombo) popularSelectCombo();
+  };
+
+  async function popularSelectCombo() {
+    const snap = await getDocs(collection(db,'cardapio'));
+    const itens = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(i => i.ativo !== false && i.categoria !== 'combos')
+      .sort((a,b) => a.nome.localeCompare(b.nome));
+    const jaAdicionados = comboItens.map(x=>x.id);
+    document.getElementById('combo-item-sel').innerHTML =
+      '<option value="">Selecione um item do cardápio...</option>' +
+      itens.filter(i => !jaAdicionados.includes(i.id))
+        .map(i => `<option value="${i.id}" data-nome="${i.nome}" data-preco="${i.preco}">${i.nome} — R$ ${Number(i.preco).toFixed(2).replace('.',',')}</option>`)
+        .join('');
+  }
+
+  window.adicionarItemCombo = () => {
+    const sel = document.getElementById('combo-item-sel');
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt.value) return;
+    comboItens.push({ id: opt.value, nome: opt.dataset.nome, preco: parseFloat(opt.dataset.preco)||0 });
+    sel.value = '';
+    renderComboItens();
+    popularSelectCombo();
+    calcularCombo();
+  };
+
+  window._removerComboItem = i => {
+    comboItens.splice(i,1);
+    renderComboItens();
+    popularSelectCombo();
+    calcularCombo();
+  };
+
+  function renderComboItens() {
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const lista = document.getElementById('combo-itens-lista');
+    if (!comboItens.length) {
+      lista.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0">Nenhum item adicionado ainda</div>';
+      document.getElementById('combo-calc').style.display = 'none';
+      return;
+    }
+    lista.innerHTML = comboItens.map((it,i) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:8px;padding:8px 12px;border:1px solid #c7d4f0">
+        <span style="font-size:13px;font-weight:500;color:var(--text)">${it.nome}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:13px;color:var(--muted)">${fmt(it.preco)}</span>
+          <button onclick="window._removerComboItem(${i})" style="background:none;border:none;color:#dc2626;font-size:16px;cursor:pointer;line-height:1">×</button>
+        </div>
+      </div>`).join('');
+    document.getElementById('combo-calc').style.display = 'block';
+  }
+
+  window.calcularCombo = () => {
+    const soma = comboItens.reduce((a,i) => a+i.preco, 0);
+    const desc = parseInt(document.getElementById('combo-desc-num').value) || 0;
+    const sugerido = soma * (1 - desc/100);
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    document.getElementById('combo-soma').textContent = fmt(soma);
+    document.getElementById('combo-preco-sug').textContent = fmt(sugerido);
+  };
+
+  window.aplicarPrecoCombo = () => {
+    const soma = comboItens.reduce((a,i) => a+i.preco, 0);
+    const desc = parseInt(document.getElementById('combo-desc-num').value) || 0;
+    const sugerido = (soma * (1 - desc/100)).toFixed(2);
+    document.getElementById('item-preco').value = sugerido;
+  };
 
   // Descontar estoque quando pedido chega
   async function descontarEstoque(itensPedido) {
@@ -924,6 +1036,10 @@
       document.getElementById('item-status').value = 'true';
       document.getElementById('item-foto-url').value = '';
       document.getElementById('foto-preview-wrap').style.display = 'none';
+      comboItens = [];
+      document.getElementById('secao-combo').style.display = 'none';
+      document.getElementById('combo-itens-lista').innerHTML = '';
+      document.getElementById('combo-calc').style.display = 'none';
       renderReceita();
       document.getElementById('modal-item').classList.remove('hidden');
     } catch(e) { console.error('Erro abrirModalItem:', e); alert('Erro ao abrir formulário: ' + e.message); }
@@ -947,6 +1063,11 @@
     document.getElementById('item-status').value = it.ativo !== false ? 'true' : 'false';
     document.getElementById('item-foto-url').value = it.foto || '';
     document.getElementById('item-desc').value = it.descricao || '';
+    // Combo
+    comboItens = it.comboItens ? [...it.comboItens] : [];
+    const isCombo = it.categoria === 'combos';
+    document.getElementById('secao-combo').style.display = isCombo ? 'block' : 'none';
+    if (isCombo) { renderComboItens(); popularSelectCombo(); calcularCombo(); }
     if (it.foto) {
       document.getElementById('foto-preview-img').src = it.foto;
       document.getElementById('foto-preview-wrap').style.display = 'flex';
@@ -992,6 +1113,7 @@
         ativo: document.getElementById('item-status').value === 'true',
         foto: fotoUrl,
         receita: receitaAtual,
+        comboItens: comboItens.length ? comboItens : [],
         ordem: snap.size + 1,
       };
       if (itemEditandoId) {
