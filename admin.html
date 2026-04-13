@@ -459,6 +459,7 @@
       <button class="btn-sec" onclick="fecharModal('modal-fechamento')">Fechar</button>
       <button class="btn-sec" id="btn-imprimir-fechamento" style="border-color:#6366f1;color:#6366f1">🖨️ Imprimir</button>
       <button class="btn-sec" id="btn-wpp-fechamento" style="border-color:#25d366;color:#25d366">📲 WhatsApp</button>
+      <button class="btn-prim" id="btn-finalizar-dia" style="background:#dc2626;flex:1;padding:12px;font-size:14px">✅ Finalizar dia e fechar caixa</button>
     </div>
   </div>
 </div>
@@ -1279,6 +1280,7 @@
     if (id === 'btn-fechar-caixa') abrirFechamento();
     if (id === 'btn-imprimir-fechamento') imprimirFechamento();
     if (id === 'btn-wpp-fechamento') enviarWppFechamento();
+    if (id === 'btn-finalizar-dia') finalizarDia();
     if (id === 'btn-wpp-estoque') enviarWppEstoque();
     if (id === 'btn-imprimir-estoque') imprimirListaCompras();
 
@@ -1394,7 +1396,9 @@
     try {
       const hoje = new Date(); hoje.setHours(0,0,0,0);
       const snap = await getDocs(collection(db,'pedidos'));
-      const todos = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
+      const todos = snap.docs.map(d => ({id:d.id,...d.data()}))
+        .filter(p => !p.arquivado)
+        .sort((a,b)=>(b.criadoEm?.seconds||0)-(a.criadoEm?.seconds||0));
       const pedidosHoje = todos.filter(p => p.criadoEm && p.criadoEm.toDate() >= hoje);
       const totalHoje = pedidosHoje.reduce((a,p) => a + (p.total||0), 0);
       const ticket = pedidosHoje.length ? totalHoje / pedidosHoje.length : 0;
@@ -2076,7 +2080,7 @@
 
   async function carregarCaixa() {
     const snap = await getDocs(collection(db,'pedidos'));
-    const todos = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const todos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p => !p.arquivado);
     const hoje = new Date(); hoje.setHours(0,0,0,0);
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
     const fmtDt = ts => ts ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
@@ -2257,6 +2261,58 @@
         </div>
       </div>`;
     }).join('');
+  }
+
+  async function finalizarDia() {
+    const pendentes = document.getElementById('fech-pendentes').textContent;
+    const totalPend = document.getElementById('fech-pendentes-val').textContent;
+
+    let msg = '✅ Confirmar fechamento do caixa?\n\nIsso irá marcar todos os pedidos pagos como "arquivados" e o caixa começa zerado amanhã.';
+    if (parseInt(pendentes) > 0) {
+      msg = `⚠️ Ainda há ${pendentes} pedido(s) em aberto (${totalPend}).\n\nDeseja fechar o caixa mesmo assim? Os pedidos em aberto serão mantidos para o próximo dia.`;
+    }
+    if (!confirm(msg)) return;
+
+    const btn = document.getElementById('btn-finalizar-dia');
+    btn.textContent = 'Fechando...'; btn.disabled = true;
+
+    try {
+      // Arquiva todos os pedidos pagos de hoje adicionando flag arquivado
+      const snap = await getDocs(collection(db,'pedidos'));
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      const pagosHoje = snap.docs
+        .filter(d => { const p = d.data(); return p.pago && p.pagoEm && p.pagoEm.toDate() >= hoje; });
+
+      // Salva o fechamento no Firebase para histórico
+      const total = document.getElementById('fech-total').textContent;
+      const obs = document.getElementById('fech-obs')?.value || '';
+      const totalFaturado = parseFloat(document.getElementById('fech-total').textContent.replace('R$ ','').replace('.','').replace(',','.')) || 0;
+      await addDoc(collection(db,'fechamentos'), {
+        data: new Date().toLocaleDateString('pt-BR'),
+        dataTs: serverTimestamp(),
+        totalFaturado,
+        totalPIX: parseFloat(document.getElementById('fech-pix').textContent.replace('R$ ','').replace('.','').replace(',','.')) || 0,
+        totalCartao: parseFloat(document.getElementById('fech-cartao').textContent.replace('R$ ','').replace('.','').replace(',','.')) || 0,
+        totalDinheiro: parseFloat(document.getElementById('fech-dinheiro').textContent.replace('R$ ','').replace('.','').replace(',','.')) || 0,
+        pedidosFinalizados: parseInt(document.getElementById('fech-pedidos').textContent) || 0,
+        observacao: obs,
+        fechadoPor: localStorage.getItem('donalds_admin_user') || 'admin',
+      });
+
+      // Marca pedidos pagos como arquivados
+      for (const d of pagosHoje) {
+        await updateDoc(doc(db,'pedidos',d.id), { arquivado: true });
+      }
+
+      fecharModal('modal-fechamento');
+      alert(`✅ Caixa fechado com sucesso!\n${pagosHoje.length} pedido(s) arquivados.\n\nO caixa está zerado e pronto para o próximo dia.`);
+      carregarCaixa();
+      carregarDashboard();
+    } catch(e) {
+      console.error(e);
+      alert('Erro ao fechar o caixa: ' + e.message);
+    }
+    btn.textContent = '✅ Finalizar dia e fechar caixa'; btn.disabled = false;
   }
 
   async function carregarEstoqueBaixoAba() {
