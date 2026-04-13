@@ -133,7 +133,10 @@
     <!-- PRONTOS PARA PAGAR -->
     <div class="sec-titulo">
       Prontos para pagar
-      <button class="btn-sec" id="btn-atualizar">Atualizar</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sec" id="btn-atualizar">Atualizar</button>
+        <button class="btn-prim" id="btn-fechar-caixa" style="background:#16a34a;padding:8px 16px;font-size:12px">🔒 Fechar Caixa</button>
+      </div>
     </div>
     <div class="prontos-grid" id="prontos-grid">
       <div style="color:var(--muted);font-size:13px;padding:20px">Carregando...</div>
@@ -146,6 +149,78 @@
         <thead><tr><th>Pedido</th><th>Mesa</th><th>Itens</th><th>Total</th><th>Pagamento</th><th>Horário</th></tr></thead>
         <tbody id="historico-tbody"></tbody>
       </table>
+    </div>
+
+    <!-- ESTOQUE BAIXO -->
+    <div class="sec-titulo" style="margin-top:8px">
+      ⚠️ Lista de compras
+      <div style="display:flex;gap:8px">
+        <button class="btn-sec" id="btn-imprimir-estoque" style="font-size:11px;padding:5px 12px;border-color:#6366f1;color:#6366f1">🖨️ Imprimir</button>
+        <button class="btn-sec" id="btn-wpp-estoque" style="font-size:11px;padding:5px 12px;border-color:#25d366;color:#25d366">📲 WhatsApp</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Ingredientes que precisam de reposição.</p>
+    <div id="estoque-baixo-lista" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
+      <div style="color:var(--muted);font-size:13px">Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FECHAMENTO -->
+<div class="modal-overlay hidden" id="modal-fechamento">
+  <div class="modal" style="max-width:580px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="modal-titulo" style="margin-bottom:0">🔒 FECHAMENTO DE CAIXA</div>
+      <div style="font-size:12px;color:var(--muted)" id="fech-data"></div>
+    </div>
+    <div style="background:var(--azul);border-radius:14px;padding:20px;margin-bottom:16px">
+      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Resumo do dia</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px">Total faturado</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--ouro);letter-spacing:1px" id="fech-total">R$ 0,00</div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px">Pedidos finalizados</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:1px" id="fech-pedidos">0</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:3px">PIX</div>
+          <div style="font-size:16px;font-weight:700;color:#4ade80" id="fech-pix">R$ 0,00</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:3px">Cartão</div>
+          <div style="font-size:16px;font-weight:700;color:#60a5fa" id="fech-cartao">R$ 0,00</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:3px">Dinheiro</div>
+          <div style="font-size:16px;font-weight:700;color:var(--ouro)" id="fech-dinheiro">R$ 0,00</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:#f8f8f4;border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ticket médio</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul)" id="fech-ticket">R$ 0,00</div>
+      </div>
+      <div style="background:#fff8f0;border-radius:10px;padding:14px;border:1px solid #fed7aa">
+        <div style="font-size:11px;color:#c2410c;margin-bottom:4px">Pedidos pendentes</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#ea580c" id="fech-pendentes">0</div>
+        <div style="font-size:11px;color:#c2410c" id="fech-pendentes-val"></div>
+      </div>
+    </div>
+    <div style="max-height:150px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:14px" id="fech-lista-pedidos"></div>
+    <div class="campo">
+      <label>Observação (opcional)</label>
+      <textarea id="fech-obs" rows="2" placeholder="Ex: caixa conferido, sobrou R$ 50 em espécie..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;resize:none;outline:none"></textarea>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn-sec" id="btn-fechar-modal-fech">Fechar</button>
+      <button class="btn-sec" id="btn-imprimir-fechamento" style="border-color:#6366f1;color:#6366f1">🖨️ Imprimir</button>
+      <button class="btn-sec" id="btn-wpp-fechamento" style="border-color:#25d366;color:#25d366">📲 WhatsApp</button>
+      <button class="btn-prim" id="btn-finalizar-dia" style="background:#dc2626;flex:1;padding:12px;font-size:14px">✅ Finalizar dia e fechar caixa</button>
     </div>
   </div>
 </div>
@@ -196,7 +271,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
@@ -229,6 +304,7 @@
     document.getElementById('header-user').textContent = user;
     localStorage.setItem('donalds_caixa_user', user);
     carregarCaixa();
+    carregarEstoqueBaixo();
   }
 
   function fazerLogin() {
@@ -345,6 +421,159 @@
   // Auto-refresh a cada 15s
   setInterval(carregarCaixa, 15000);
 
+  // ===== ESTOQUE BAIXO =====
+  async function carregarEstoqueBaixo() {
+    const snap = await getDocs(collection(db,'estoque'));
+    const itens = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const baixo = itens.filter(e => e.minimo > 0 && (e.quantidade||0) < e.minimo * 2)
+      .sort((a,b) => (a.quantidade/Math.max(a.minimo,0.01)) - (b.quantidade/Math.max(b.minimo,0.01)));
+    const lista = document.getElementById('estoque-baixo-lista');
+    if (!lista) return;
+    if (!baixo.length) {
+      lista.innerHTML = '<span style="color:#16a34a;font-size:13px;font-weight:600">✓ Estoque OK</span>';
+      return;
+    }
+    lista.innerHTML = baixo.map(e => {
+      const pct = e.minimo > 0 ? e.quantidade/e.minimo : 0;
+      const cor = pct <= 0 ? '#dc2626' : pct < 1 ? '#dc2626' : '#d97706';
+      const bg = pct <= 0 ? '#fee2e2' : pct < 1 ? '#fee2e2' : '#fef3c7';
+      return `<div style="background:${bg};border:1px solid ${cor}40;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+        <span>${pct<=0?'🚨':pct<1?'⚠️':'📉'}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:${cor}">${e.nome}</div>
+          <div style="font-size:11px;color:${cor}90">Tem: ${Number(e.quantidade||0).toFixed(2)} ${e.unidade||''} · Mín: ${Number(e.minimo).toFixed(2)}</div>
+        </div>
+      </div>`;
+    }).join('');
+    return baixo;
+  }
+
+  // ===== FECHAMENTO =====
+  async function abrirFechamento() {
+    const snap = await getDocs(collection(db,'pedidos'));
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const todos = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>!p.arquivado);
+    const finalizados = todos.filter(p => p.pago && p.pagoEm && p.pagoEm.toDate() >= hoje)
+      .sort((a,b) => (a.pagoEm?.seconds||0) - (b.pagoEm?.seconds||0));
+    const pendentes = todos.filter(p => !p.pago);
+    const total = finalizados.reduce((a,p)=>a+(p.total||0),0);
+    const ticket = finalizados.length ? total/finalizados.length : 0;
+    const porPgto = {PIX:0, Cartão:0, Dinheiro:0};
+    finalizados.forEach(p => {
+      if (p.pagamentos?.length) p.pagamentos.forEach(pg => { if(porPgto[pg.forma]!==undefined) porPgto[pg.forma]+=pg.valor||0; });
+      else if (porPgto[p.pagamento]!==undefined) porPgto[p.pagamento]+=(p.total||0);
+    });
+    const agora = new Date();
+    document.getElementById('fech-data').textContent = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('fech-total').textContent = fmt(total);
+    document.getElementById('fech-pedidos').textContent = finalizados.length;
+    document.getElementById('fech-pix').textContent = fmt(porPgto['PIX']);
+    document.getElementById('fech-cartao').textContent = fmt(porPgto['Cartão']);
+    document.getElementById('fech-dinheiro').textContent = fmt(porPgto['Dinheiro']);
+    document.getElementById('fech-ticket').textContent = fmt(ticket);
+    document.getElementById('fech-pendentes').textContent = pendentes.length;
+    const totalPend = pendentes.reduce((a,p)=>a+(p.total||0),0);
+    document.getElementById('fech-pendentes-val').textContent = pendentes.length ? `Em aberto: ${fmt(totalPend)}` : 'Nenhum em aberto ✓';
+    document.getElementById('fech-lista-pedidos').innerHTML = finalizados.length
+      ? finalizados.map(p => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="font-weight:600">#${p.id.slice(-4).toUpperCase()} · Mesa ${p.mesa}</span>
+          <span style="color:var(--muted)">${fmtHora(p.pagoEm)}</span>
+          <span style="font-weight:700;color:var(--azul)">${fmt(p.total||0)}</span>
+          <span style="color:var(--muted)">${p.pagamento||'Misto'}</span>
+        </div>`).join('')
+      : '<div style="padding:16px;text-align:center;color:var(--muted)">Nenhum pedido finalizado hoje.</div>';
+    document.getElementById('modal-fechamento').classList.remove('hidden');
+  }
+
+  async function finalizarDia() {
+    const pendentes = document.getElementById('fech-pendentes').textContent;
+    let msg = '✅ Confirmar fechamento do caixa?\n\nTodos os pedidos pagos serão arquivados e o caixa começa zerado.';
+    if (parseInt(pendentes) > 0) msg = `⚠️ Ainda há ${pendentes} pedido(s) em aberto.\n\nFechar mesmo assim?`;
+    if (!confirm(msg)) return;
+    const btn = document.getElementById('btn-finalizar-dia');
+    btn.textContent = 'Fechando...'; btn.disabled = true;
+    try {
+      const snap = await getDocs(collection(db,'pedidos'));
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      const pagosHoje = snap.docs.filter(d => { const p=d.data(); return p.pago && p.pagoEm && p.pagoEm.toDate()>=hoje; });
+      const totalFat = parseFloat(document.getElementById('fech-total').textContent.replace('R$ ','').replace('.','').replace(',','.')) || 0;
+      await addDoc(collection(db,'fechamentos'), {
+        data: new Date().toLocaleDateString('pt-BR'), dataTs: serverTimestamp(),
+        totalFaturado: totalFat,
+        totalPIX: parseFloat(document.getElementById('fech-pix').textContent.replace('R$ ','').replace('.','').replace(',','.')) || 0,
+        totalCartao: parseFloat(document.getElementById('fech-cartao').textContent.replace('R$ ','').replace('.','').replace(',','.')) || 0,
+        totalDinheiro: parseFloat(document.getElementById('fech-dinheiro').textContent.replace('R$ ','').replace('.','').replace(',','.')) || 0,
+        pedidosFinalizados: parseInt(document.getElementById('fech-pedidos').textContent) || 0,
+        observacao: document.getElementById('fech-obs')?.value || '',
+        fechadoPor: localStorage.getItem('donalds_caixa_user') || 'caixa',
+      });
+      for (const d of pagosHoje) await updateDoc(doc(db,'pedidos',d.id), {arquivado:true});
+      document.getElementById('modal-fechamento').classList.add('hidden');
+      alert(`✅ Caixa fechado!\n${pagosHoje.length} pedido(s) arquivados.`);
+      carregarCaixa();
+    } catch(e) { alert('Erro: ' + e.message); }
+    btn.textContent = '✅ Finalizar dia e fechar caixa'; btn.disabled = false;
+  }
+
+  function gerarTextoFechamento() {
+    const data = document.getElementById('fech-data').textContent;
+    return `🍔 *DONALDS' — FECHAMENTO DE CAIXA*\n📅 ${data}\n\n` +
+      `💰 *Total:* ${document.getElementById('fech-total').textContent}\n` +
+      `🧾 *Pedidos:* ${document.getElementById('fech-pedidos').textContent}\n` +
+      `🎫 *Ticket médio:* ${document.getElementById('fech-ticket').textContent}\n\n` +
+      `✅ PIX: ${document.getElementById('fech-pix').textContent}\n` +
+      `💳 Cartão: ${document.getElementById('fech-cartao').textContent}\n` +
+      `💵 Dinheiro: ${document.getElementById('fech-dinheiro').textContent}\n\n` +
+      (parseInt(document.getElementById('fech-pendentes').textContent) > 0 ? `⚠️ Pendentes: ${document.getElementById('fech-pendentes').textContent}\n\n` : '') +
+      (document.getElementById('fech-obs')?.value ? `📝 ${document.getElementById('fech-obs').value}\n\n` : '') +
+      `_Sistema Donalds'_`;
+  }
+
+  async function imprimirListaCompras() {
+    const snap = await getDocs(collection(db,'estoque'));
+    const itens = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const baixo = itens.filter(e => e.minimo>0 && (e.quantidade||0)<e.minimo*2)
+      .sort((a,b) => (a.quantidade/Math.max(a.minimo,0.01))-(b.quantidade/Math.max(b.minimo,0.01)));
+    const data = new Date().toLocaleDateString('pt-BR');
+    const hora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const win = window.open('','_blank');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Lista de Compras</title>
+    <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',sans-serif;padding:28px;max-width:680px;margin:0 auto}
+    h1{font-size:20px;color:#0d2654;margin-bottom:2px}.sub{font-size:12px;color:#888;margin-bottom:20px;border-bottom:2px solid #0d2654;padding-bottom:12px}
+    table{width:100%;border-collapse:collapse}th{background:#f4f4f0;padding:10px 12px;font-size:11px;text-align:left;color:#888;text-transform:uppercase;border-bottom:2px solid #e8e8e0}
+    td{padding:11px 12px;font-size:14px;border-bottom:1px solid #f0f0f0}.badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+    .campo{width:90px;border:1px solid #ddd;border-radius:6px;padding:5px 8px;text-align:center}
+    .assin{display:flex;gap:60px;margin-top:40px}.linha{border-top:1px solid #333;width:200px;padding-top:6px;font-size:11px;color:#888;text-align:center}
+    .footer{margin-top:24px;padding-top:10px;border-top:1px solid #e8e8e0;font-size:11px;color:#aaa;display:flex;justify-content:space-between}
+    @media print{.campo{border:1px solid #ccc}}</style></head><body>
+    <h1>🍔 DONALDS' — LISTA DE COMPRAS</h1>
+    <div class="sub">${data} às ${hora} · ${baixo.length} item(s) para repor</div>
+    ${!baixo.length ? '<p style="padding:30px;text-align:center;color:#888">✅ Estoque OK — nenhum item abaixo do mínimo</p>' :
+    `<table><thead><tr><th>#</th><th>Ingrediente</th><th>Situação</th><th>Atual</th><th>Mínimo</th><th>Qtd a comprar</th></tr></thead><tbody>
+    ${baixo.map((e,i)=>{
+      const pct=e.minimo>0?e.quantidade/e.minimo:0;
+      const badge=pct<=0?'<span class="badge" style="background:#fee2e2;color:#dc2626">🚨 Zerado</span>':pct<1?'<span class="badge" style="background:#fee2e2;color:#dc2626">⚠️ Crítico</span>':'<span class="badge" style="background:#fef3c7;color:#d97706">📉 Baixo</span>';
+      const sug=Math.max(0,(e.minimo*3)-(e.quantidade||0)).toFixed(2);
+      return `<tr><td style="color:#aaa;font-size:12px">${i+1}</td><td><strong>${e.nome}</strong></td><td>${badge}</td><td style="color:#dc2626;font-weight:600">${Number(e.quantidade||0).toFixed(2)} ${e.unidade||''}</td><td style="color:#888">${Number(e.minimo).toFixed(2)}</td><td><input class="campo" type="text" value="${sug}"/> ${e.unidade||''}</td></tr>`;
+    }).join('')}</tbody></table>
+    <div class="assin"><div class="linha">Responsável pela compra</div><div class="linha">Conferido por</div></div>`}
+    <div class="footer"><span>Donalds' · ${data}</span><span>${baixo.length} itens</span></div>
+    <script>window.onload=()=>window.print()<\/script></body></html>`);
+    win.document.close();
+  }
+
+  async function enviarWppEstoque() {
+    const snap = await getDocs(collection(db,'estoque'));
+    const itens = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const baixo = itens.filter(e=>e.minimo>0&&(e.quantidade||0)<e.minimo*2)
+      .sort((a,b)=>(a.quantidade/Math.max(a.minimo,0.01))-(b.quantidade/Math.max(b.minimo,0.01)));
+    if (!baixo.length) { alert('✅ Estoque OK — nada para comprar!'); return; }
+    const lista = baixo.map(e=>{const pct=e.minimo>0?e.quantidade/e.minimo:0;const em=pct<=0?'🚨':pct<1?'⚠️':'📉';return `${em} *${e.nome}* — Tem: ${Number(e.quantidade||0).toFixed(2)} ${e.unidade||''} (mín: ${Number(e.minimo).toFixed(2)})`;}).join('\n');
+    const texto = `🛒 *DONALDS' — LISTA DE COMPRAS*\n📅 ${new Date().toLocaleDateString('pt-BR')}\n\n${lista}\n\n_Lista gerada pelo sistema_`;
+    window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank');
+  }
+
   // ===== MODAL PAGAMENTO =====
   function abrirModal(pedido) {
     pedidoAtual = pedido;
@@ -404,7 +633,35 @@
   }
 
   // ===== EVENT LISTENERS =====
-  document.getElementById('btn-atualizar').addEventListener('click', carregarCaixa);
+  document.getElementById('btn-atualizar').addEventListener('click', () => { carregarCaixa(); carregarEstoqueBaixo(); });
+  document.getElementById('btn-fechar-caixa').addEventListener('click', abrirFechamento);
+  document.getElementById('btn-fechar-modal-fech').addEventListener('click', () => document.getElementById('modal-fechamento').classList.add('hidden'));
+  document.getElementById('btn-imprimir-fechamento').addEventListener('click', () => {
+    const win = window.open('','_blank');
+    const total = document.getElementById('fech-total').textContent;
+    const data = document.getElementById('fech-data').textContent;
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Fechamento</title>
+    <style>body{font-family:'Segoe UI',sans-serif;padding:28px;max-width:600px;margin:0 auto}h1{font-size:20px;color:#0d2654}.box{background:#f4f4f0;border-radius:10px;padding:16px;margin:16px 0}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e8e8e0;font-size:14px}.total{font-size:28px;font-weight:900;color:#0d2654}.pgto{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0}.p{background:#fff;border:1px solid #e8e8e0;border-radius:8px;padding:12px;text-align:center}.pl{font-size:11px;color:#888;text-transform:uppercase}.pv{font-size:16px;font-weight:700;margin-top:4px}.footer{margin-top:24px;font-size:11px;color:#aaa;text-align:center}@media print{button{display:none}}</style></head><body>
+    <h1>🍔 DONALDS' — FECHAMENTO DE CAIXA</h1><p style="color:#888;font-size:12px;margin-bottom:16px">${data}</p>
+    <div class="box"><div class="row"><span>Total faturado</span><span class="total">${total}</span></div>
+    <div class="row"><span>Pedidos</span><span>${document.getElementById('fech-pedidos').textContent}</span></div>
+    <div class="row"><span>Ticket médio</span><span>${document.getElementById('fech-ticket').textContent}</span></div>
+    <div class="row"><span>Pendentes</span><span style="color:#ea580c">${document.getElementById('fech-pendentes').textContent}</span></div></div>
+    <div class="pgto">
+    <div class="p"><div class="pl">PIX</div><div class="pv" style="color:#16a34a">${document.getElementById('fech-pix').textContent}</div></div>
+    <div class="p"><div class="pl">Cartão</div><div class="pv" style="color:#2563eb">${document.getElementById('fech-cartao').textContent}</div></div>
+    <div class="p"><div class="pl">Dinheiro</div><div class="pv" style="color:#d97706">${document.getElementById('fech-dinheiro').textContent}</div></div></div>
+    ${document.getElementById('fech-obs')?.value?`<div class="box">📝 ${document.getElementById('fech-obs').value}</div>`:''}
+    <div class="footer">Gerado em ${data} · Donalds' Sanduicheria</div>
+    <script>window.onload=()=>window.print()<\/script></body></html>`);
+    win.document.close();
+  });
+  document.getElementById('btn-wpp-fechamento').addEventListener('click', () => {
+    window.open('https://wa.me/?text='+encodeURIComponent(gerarTextoFechamento()),'_blank');
+  });
+  document.getElementById('btn-finalizar-dia').addEventListener('click', finalizarDia);
+  document.getElementById('btn-imprimir-estoque').addEventListener('click', imprimirListaCompras);
+  document.getElementById('btn-wpp-estoque').addEventListener('click', enviarWppEstoque);
   document.getElementById('btn-cancelar-pgto').addEventListener('click', () => {
     document.getElementById('modal-pgto').classList.add('hidden');
     pedidoAtual = null;
