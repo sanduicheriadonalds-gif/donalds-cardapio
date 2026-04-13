@@ -347,9 +347,9 @@
     </div>
     <div class="campo"><label>Forma de pagamento</label>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-        <button class="pgto-btn ativo" id="cx-pgto-pix" onclick="selecionarPgtoCaixa('PIX')">PIX</button>
-        <button class="pgto-btn" id="cx-pgto-cartao" onclick="selecionarPgtoCaixa('Cartão')">Cartão</button>
-        <button class="pgto-btn" id="cx-pgto-dinheiro" onclick="selecionarPgtoCaixa('Dinheiro')">Dinheiro</button>
+        <button class="pgto-btn ativo" id="cx-pgto-pix" data-pgto="PIX">PIX</button>
+        <button class="pgto-btn" id="cx-pgto-cartao" data-pgto="Cartão">Cartão</button>
+        <button class="pgto-btn" id="cx-pgto-dinheiro" data-pgto="Dinheiro">Dinheiro</button>
       </div>
       <input type="hidden" id="cx-pgto-val" value="PIX"/>
     </div>
@@ -357,7 +357,7 @@
     <div id="cx-troco-wrap" style="display:none">
       <div class="campo-row">
         <div class="campo"><label>Valor recebido (R$)</label>
-          <input type="number" id="cx-recebido" step="0.01" min="0" placeholder="Ex: 50,00" oninput="calcularTroco()"/>
+          <input type="number" id="cx-recebido" step="0.01" min="0" placeholder="Ex: 50,00"/>
         </div>
         <div class="campo"><label>Troco</label>
           <input type="text" id="cx-troco" readonly style="background:#f0fdf4;color:#15803d;font-weight:700;font-size:15px"/>
@@ -369,7 +369,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn-sec" onclick="fecharModal('modal-caixa')">Cancelar</button>
-      <button class="btn-prim" onclick="finalizarPagamento()" style="flex:1;padding:13px;font-size:15px">Confirmar recebimento</button>
+      <button class="btn-prim" id="btn-finalizar-pgto" style="flex:1;padding:13px;font-size:15px">Confirmar recebimento</button>
     </div>
   </div>
 </div>
@@ -1002,7 +1002,11 @@
     if (id === 'btn-novo-adicional') window.abrirModalAdicional();
     if (id === 'btn-atualizar-caixa') carregarCaixa();
 
-    // Caixa — abrir modal de pagamento
+    if (id === 'btn-finalizar-pgto') window.finalizarPagamento();
+
+    // Botões de forma de pagamento do modal caixa
+    const pgtoBtn = e.target.closest('[data-pgto]');
+    if (pgtoBtn) window.selecionarPgtoCaixa(pgtoBtn.dataset.pgto);
     const caixaId = e.target.closest('[data-caixa-id]')?.dataset?.caixaId;
     if (caixaId) {
       getDocs(collection(db,'pedidos')).then(snap => {
@@ -1711,6 +1715,10 @@
     carregarCaixa();
     carregarDashboard();
   };
+
+  document.addEventListener('input', e => {
+    if (e.target.id === 'cx-recebido') window.calcularTroco();
+  });
 
   window.fecharModal = id => document.getElementById(id).classList.add('hidden');
 
