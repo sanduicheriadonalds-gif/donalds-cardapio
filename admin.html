@@ -2810,22 +2810,37 @@
              ⚠ Vincular ao estoque
            </button>`;
       return `<div style="background:#fff;border:1px solid ${p.estoqueId?'#bbf7d0':'#fde68a'};border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <input type="text" value="${p.nomeNF}" placeholder="Nome do produto"
-            onchange="nfProdutos[${i}].nomeNF=this.value"
-            style="flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit"/>
-          <input type="number" value="${p.qtd}" min="0" step="0.001" placeholder="Qtd"
-            onchange="nfProdutos[${i}].qtd=parseFloat(this.value)||0;nfProdutos[${i}].valorTotal=nfProdutos[${i}].qtd*nfProdutos[${i}].valorUnit;atualizarTotaisNota()"
-            style="width:80px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:center;font-family:inherit"/>
-          <input type="text" value="${p.unidade}" placeholder="UN"
-            onchange="nfProdutos[${i}].unidade=this.value"
-            style="width:60px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:center;font-family:inherit"/>
-          <input type="number" value="${p.valorUnit}" min="0" step="0.01" placeholder="R$ unit"
-            onchange="nfProdutos[${i}].valorUnit=parseFloat(this.value)||0;nfProdutos[${i}].valorTotal=nfProdutos[${i}].qtd*nfProdutos[${i}].valorUnit;atualizarTotaisNota()"
-            style="width:100px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit"/>
-          <span style="font-size:13px;font-weight:600;color:var(--azul);min-width:80px;text-align:right">${fmt(p.valorTotal)}</span>
+        <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Produto</div>
+            <input type="text" value="${p.nomeNF}" placeholder="Nome do produto"
+              onchange="nfProdutos[${i}].nomeNF=this.value"
+              style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit"/>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Qtd</div>
+            <input type="number" value="${p.qtd||''}" min="0" step="0.001" placeholder="0"
+              oninput="nfProdutos[${i}].qtd=parseFloat(this.value)||0;nfProdutos[${i}].valorTotal=nfProdutos[${i}].qtd*nfProdutos[${i}].valorUnit;atualizarTotaisNota()"
+              style="width:80px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:center;font-family:inherit"/>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Unidade</div>
+            <input type="text" value="${p.unidade}" placeholder="UN"
+              oninput="nfProdutos[${i}].unidade=this.value"
+              style="width:60px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;text-align:center;font-family:inherit"/>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Valor unit. (R$)</div>
+            <input type="number" value="${p.valorUnit||''}" min="0" step="0.01" placeholder="0,00"
+              oninput="nfProdutos[${i}].valorUnit=parseFloat(this.value)||0;nfProdutos[${i}].valorTotal=nfProdutos[${i}].qtd*nfProdutos[${i}].valorUnit;atualizarTotaisNota()"
+              style="width:100px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit"/>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Total</div>
+            <span style="font-size:14px;font-weight:700;color:var(--azul);display:block;padding:7px 4px">${fmt(p.valorTotal)}</span>
+          </div>
           <button onclick="nfProdutos.splice(${i},1);renderProdutosNota();atualizarTotaisNota()"
-            style="background:none;border:none;color:#dc2626;font-size:18px;cursor:pointer;padding:0 4px">×</button>
+            style="background:none;border:none;color:#dc2626;font-size:20px;cursor:pointer;padding:0 4px;margin-bottom:4px">×</button>
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           ${vinculoHtml}
