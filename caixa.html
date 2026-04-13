@@ -232,13 +232,25 @@
   }
 
   function fazerLogin() {
-    const user = document.getElementById('login-user').value.trim();
+    const user = document.getElementById('login-user').value.trim().toLowerCase();
     const senha = document.getElementById('login-senha').value;
-    if (USUARIOS[user] && USUARIOS[user] === senha) {
-      entrar(user);
-    } else {
-      document.getElementById('login-erro').style.display = 'block';
-    }
+    // Credenciais hardcoded
+    if (USUARIOS[user] && USUARIOS[user] === senha) { entrar(user); return; }
+    // Busca no Firebase
+    getDocs(collection(db,'funcionarios')).then(snap => {
+      const func = snap.docs.map(d=>({id:d.id,...d.data()}))
+        .find(f => f.usuario === user && f.status === 'ativo');
+      if (!func) { document.getElementById('login-erro').style.display = 'block'; return; }
+      let senhaOk = false;
+      try { senhaOk = decodeURIComponent(escape(atob(func.senha||''))) === senha; } catch(e) { senhaOk = false; }
+      if (!senhaOk) { document.getElementById('login-erro').style.display = 'block'; return; }
+      if (func.perfil !== 'caixa' && func.perfil !== 'admin' && func.perfil !== 'gerente') {
+        document.getElementById('login-erro').textContent = 'Seu perfil não tem acesso ao caixa.';
+        document.getElementById('login-erro').style.display = 'block';
+        return;
+      }
+      entrar(func.nome);
+    });
   }
 
   const salvo = localStorage.getItem('donalds_caixa_user');

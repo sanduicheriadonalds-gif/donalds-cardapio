@@ -157,6 +157,7 @@
     <button class="nav-btn" data-aba="caixa">Caixa</button>
     <button class="nav-btn" data-aba="adicionais">Adicionais</button>
     <button class="nav-btn" data-aba="entrada">Entrada de mercadoria</button>
+    <button class="nav-btn" data-aba="funcionarios">Funcionários</button>
     <button class="nav-btn" data-aba="boletos">Boletos</button>
   </div>
   <div class="adm-body">
@@ -323,6 +324,46 @@
       </div>
     </div>
 
+    <!-- FUNCIONÁRIOS -->
+    <div id="aba-funcionarios" class="hidden">
+      <div class="sec-titulo">
+        Funcionários
+        <button class="btn-prim" id="btn-novo-funcionario">+ Novo funcionário</button>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+        Gerencie os acessos da equipe. Cada perfil tem acesso ao seu respectivo sistema.
+      </p>
+      <!-- Cards de perfil -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px" id="perfis-info">
+        <div style="background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">👑</div>
+          <div style="font-size:13px;font-weight:700;color:var(--azul)">Admin / Gerente</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Acesso total ao painel admin</div>
+        </div>
+        <div style="background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">🖥️</div>
+          <div style="font-size:13px;font-weight:700;color:var(--azul)">Caixa</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Acesso à tela de caixa</div>
+        </div>
+        <div style="background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">👨‍🍳</div>
+          <div style="font-size:13px;font-weight:700;color:var(--azul)">Cozinheiro</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Acesso à tela da cozinha</div>
+        </div>
+        <div style="background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px">
+          <div style="font-size:18px;margin-bottom:6px">🛎️</div>
+          <div style="font-size:13px;font-weight:700;color:var(--azul)">Garçom</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Acesso ao cardápio (pedido pela equipe)</div>
+        </div>
+      </div>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
+          <tbody id="tabela-funcionarios"><tr><td colspan="6" class="loading-inline">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- BOLETOS -->
     <div id="aba-boletos" class="hidden">
       <div class="sec-titulo">Boletos em aberto</div>
@@ -370,6 +411,41 @@
     <div class="modal-footer">
       <button class="btn-sec" onclick="fecharModal('modal-caixa')">Cancelar</button>
       <button class="btn-prim" id="btn-finalizar-pgto" style="flex:1;padding:13px;font-size:15px">Confirmar recebimento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FUNCIONÁRIO -->
+<div class="modal-overlay hidden" id="modal-funcionario">
+  <div class="modal">
+    <div class="modal-titulo" id="modal-func-titulo">NOVO FUNCIONÁRIO</div>
+    <div class="campo"><label>Nome completo</label>
+      <input type="text" id="func-nome" placeholder="Ex: João Silva"/>
+    </div>
+    <div class="campo"><label>Usuário (para login)</label>
+      <input type="text" id="func-usuario" placeholder="Ex: joao" autocomplete="off" style="text-transform:lowercase"/>
+    </div>
+    <div class="campo"><label>Senha</label>
+      <input type="password" id="func-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+    </div>
+    <div class="campo"><label>Perfil de acesso</label>
+      <select id="func-perfil">
+        <option value="caixa">🖥️ Caixa — acessa tela de caixa</option>
+        <option value="cozinheiro">👨‍🍳 Cozinheiro — acessa tela da cozinha</option>
+        <option value="garcom">🛎️ Garçom — acessa cardápio</option>
+        <option value="gerente">👑 Gerente — acessa painel admin completo</option>
+        <option value="admin">👑 Admin — acessa painel admin completo</option>
+      </select>
+    </div>
+    <div class="campo"><label>Status</label>
+      <select id="func-status">
+        <option value="ativo">Ativo</option>
+        <option value="inativo">Inativo (bloqueado)</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" onclick="fecharModal('modal-funcionario')">Cancelar</button>
+      <button class="btn-prim" onclick="salvarFuncionario()">Salvar</button>
     </div>
   </div>
 </div>
@@ -956,14 +1032,44 @@
   }
 
   function fazerLogin() {
-    const user = document.getElementById('login-user').value.trim();
+    const user = document.getElementById('login-user').value.trim().toLowerCase();
     const senha = document.getElementById('login-senha').value;
+    // Credenciais hardcoded (admin/gerente)
     if (USUARIOS[user] && USUARIOS[user] === senha) {
       localStorage.setItem('donalds_admin_user', user);
       entrarAdmin(user);
-    } else {
-      document.getElementById('login-erro').style.display = 'block';
+      return;
     }
+    // Busca no Firebase (funcionários cadastrados)
+    getDocs(collection(db,'funcionarios')).then(snap => {
+      const func = snap.docs.map(d=>({id:d.id,...d.data()}))
+        .find(f => f.usuario === user && f.status === 'ativo');
+      if (!func) {
+        document.getElementById('login-erro').style.display = 'block';
+        return;
+      }
+      // Verifica senha
+      let senhaOk = false;
+      try { senhaOk = decodeURIComponent(escape(atob(func.senha))) === senha; } catch(e) { senhaOk = atob(func.senha||'') === senha; }
+      if (!senhaOk) {
+        document.getElementById('login-erro').style.display = 'block';
+        return;
+      }
+      // Redireciona pelo perfil
+      const PERFIS_REDIRECT = {
+        caixa: 'caixa.html',
+        cozinheiro: 'cozinha.html',
+        garcom: 'cardapio.html?mesa=1',
+      };
+      const redirect = PERFIS_REDIRECT[func.perfil];
+      if (redirect) {
+        window.location.href = redirect;
+      } else {
+        // gerente/admin → entra no painel
+        localStorage.setItem('donalds_admin_user', func.nome);
+        entrarAdmin(func.nome);
+      }
+    });
   }
 
   // Verifica se já estava logado
@@ -999,7 +1105,18 @@
     if (id === 'btn-novo-ingrediente') window.abrirModalEstoque();
     if (id === 'btn-nova-entrada') window.abrirModalEntrada();
     if (id === 'btn-atualizar-pedidos') window.carregarPedidos();
+    if (id === 'btn-novo-funcionario') window.abrirModalFuncionario();
     if (id === 'btn-novo-adicional') window.abrirModalAdicional();
+
+    // Editar/deletar funcionário
+    const editarFunc = e.target.closest('[data-editar-func]')?.dataset?.editarFunc;
+    if (editarFunc) window._editarFuncionario(editarFunc);
+    const deletarFunc = e.target.closest('[data-deletar-func]')?.dataset?.deletarFunc;
+    if (deletarFunc) {
+      if (confirm('Excluir este funcionário?'))
+        deleteDoc(doc(db,'funcionarios',deletarFunc)).then(() => carregarFuncionarios());
+    }
+
     if (id === 'btn-atualizar-caixa') carregarCaixa();
 
     if (id === 'btn-finalizar-pgto') window.finalizarPagamento();
@@ -1102,6 +1219,8 @@
     if (aba === 'boletos') carregarBoletos();
     if (aba === 'caixa') carregarCaixa();
     if (aba === 'clientes') carregarClientes();
+    if (aba === 'adicionais') carregarAdicionais();
+    if (aba === 'funcionarios') carregarFuncionarios();
   };
 
   // DASHBOARD
@@ -1559,6 +1678,89 @@
     }
   });
   let adicionalEditandoId = null;
+
+  // ===== FUNCIONÁRIOS =====
+  let funcEditandoId = null;
+
+  const PERFIS = {
+    admin:      { label: 'Admin',      emoji: '👑', redirect: null },
+    gerente:    { label: 'Gerente',    emoji: '👑', redirect: null },
+    caixa:      { label: 'Caixa',      emoji: '🖥️', redirect: 'caixa.html' },
+    cozinheiro: { label: 'Cozinheiro', emoji: '👨‍🍳', redirect: 'cozinha.html' },
+    garcom:     { label: 'Garçom',     emoji: '🛎️', redirect: 'cardapio.html?mesa=1' },
+  };
+
+  async function carregarFuncionarios() {
+    const snap = await getDocs(collection(db,'funcionarios'));
+    const lista = snap.docs.map(d=>({id:d.id,...d.data()}))
+      .sort((a,b) => (a.nome||'').localeCompare(b.nome||''));
+    const fmtDt = ts => ts ? ts.toDate().toLocaleDateString('pt-BR') : '—';
+    document.getElementById('tabela-funcionarios').innerHTML = lista.length
+      ? lista.map(f => {
+          const p = PERFIS[f.perfil] || {label:f.perfil,emoji:'👤'};
+          return `<tr>
+            <td><strong>${f.nome||'—'}</strong></td>
+            <td style="font-family:monospace;font-size:13px">${f.usuario||'—'}</td>
+            <td><span style="background:#e8eef8;color:#0d2654;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600">${p.emoji} ${p.label}</span></td>
+            <td><span class="tag ${f.status==='ativo'?'tag-ativo':'tag-inativo'}">${f.status==='ativo'?'Ativo':'Inativo'}</span></td>
+            <td style="font-size:12px;color:var(--muted)">${fmtDt(f.criadoEm)}</td>
+            <td><div style="display:flex;gap:6px">
+              <button class="btn-sec" data-editar-func="${f.id}">Editar</button>
+              <button class="btn-danger" data-deletar-func="${f.id}">Excluir</button>
+            </div></td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">Nenhum funcionário cadastrado.</td></tr>';
+  }
+
+  window.abrirModalFuncionario = () => {
+    funcEditandoId = null;
+    document.getElementById('modal-func-titulo').textContent = 'NOVO FUNCIONÁRIO';
+    document.getElementById('func-nome').value = '';
+    document.getElementById('func-usuario').value = '';
+    document.getElementById('func-senha').value = '';
+    document.getElementById('func-perfil').value = 'caixa';
+    document.getElementById('func-status').value = 'ativo';
+    document.getElementById('modal-funcionario').classList.remove('hidden');
+  };
+
+  window._editarFuncionario = async id => {
+    const snap = await getDocs(collection(db,'funcionarios'));
+    const d = snap.docs.find(x => x.id === id);
+    if (!d) return;
+    const f = d.data();
+    funcEditandoId = id;
+    document.getElementById('modal-func-titulo').textContent = 'EDITAR FUNCIONÁRIO';
+    document.getElementById('func-nome').value = f.nome || '';
+    document.getElementById('func-usuario').value = f.usuario || '';
+    document.getElementById('func-senha').value = '';
+    document.getElementById('func-perfil').value = f.perfil || 'caixa';
+    document.getElementById('func-status').value = f.status || 'ativo';
+    document.getElementById('modal-funcionario').classList.remove('hidden');
+  };
+
+  window.salvarFuncionario = async () => {
+    const nome = document.getElementById('func-nome').value.trim();
+    const usuario = document.getElementById('func-usuario').value.trim().toLowerCase();
+    const senha = document.getElementById('func-senha').value;
+    const perfil = document.getElementById('func-perfil').value;
+    const status = document.getElementById('func-status').value;
+    if (!nome || !usuario) { alert('Preencha nome e usuário.'); return; }
+    if (!funcEditandoId && senha.length < 6) { alert('Senha deve ter no mínimo 6 caracteres.'); return; }
+    const snap = await getDocs(collection(db,'funcionarios'));
+    const duplicado = snap.docs.find(d => d.data().usuario === usuario && d.id !== funcEditandoId);
+    if (duplicado) { alert(`Usuário "${usuario}" já existe.`); return; }
+    const dados = { nome, usuario, perfil, status };
+    if (senha) dados.senha = btoa(unescape(encodeURIComponent(senha)));
+    if (!funcEditandoId) dados.criadoEm = serverTimestamp();
+    if (funcEditandoId) {
+      await updateDoc(doc(db,'funcionarios',funcEditandoId), dados);
+    } else {
+      await addDoc(collection(db,'funcionarios'), dados);
+    }
+    fecharModal('modal-funcionario');
+    carregarFuncionarios();
+  };
 
   async function carregarAdicionais() {
     const snap = await getDocs(collection(db,'adicionais'));

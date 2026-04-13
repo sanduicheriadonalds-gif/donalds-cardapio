@@ -56,15 +56,38 @@
   .novo-alerta{position:fixed;top:80px;right:20px;background:#f59e0b;color:#000;padding:12px 20px;border-radius:10px;font-weight:700;font-size:14px;display:none;z-index:999;animation:fadeIn .3s}
   @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
   @media(max-width:900px){.colunas{grid-template-columns:1fr;padding:12px}}
+
+  /* LOGIN */
+  #tela-login{position:fixed;inset:0;background:var(--azul);display:flex;align-items:center;justify-content:center;z-index:999}
+  .login-box{background:#111;border-radius:20px;padding:36px 32px;width:100%;max-width:340px;text-align:center;border:1px solid var(--border)}
+  .login-logo{font-family:'Bebas Neue',sans-serif;font-size:26px;color:#fff;letter-spacing:3px;margin-bottom:2px}
+  .login-sub{font-size:10px;color:var(--ouro);letter-spacing:4px;margin-bottom:24px;text-transform:uppercase}
+  .login-input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;background:#1a1a1a;color:#fff;margin-bottom:10px;transition:border-color .2s}
+  .login-input:focus{border-color:var(--ouro)}
+  .login-btn{width:100%;padding:13px;background:var(--ouro);color:#000;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:opacity .2s}
+  .login-btn:hover{opacity:.9}
+  .login-erro{color:#ef4444;font-size:12px;margin-top:8px;display:none}
 </style>
 </head>
 <body>
+
+<!-- LOGIN -->
+<div id="tela-login">
+  <div class="login-box">
+    <div class="login-logo">DONALDS'</div>
+    <div class="login-sub">Cozinha</div>
+    <input class="login-input" type="text" id="login-user" placeholder="Usuário"/>
+    <input class="login-input" type="password" id="login-senha" placeholder="Senha"/>
+    <button class="login-btn" id="btn-login">ENTRAR</button>
+    <div class="login-erro" id="login-erro">Usuário ou senha incorretos.</div>
+  </div>
+</div>
 
 <div class="header">
   <div class="logo">DONALDS' <span>COZINHA</span></div>
   <div class="header-right">
     <div class="hora" id="hora">00:00</div>
-    <button class="atualizar-btn" onclick="carregarPedidos()">Atualizar</button>
+    <button class="atualizar-btn" id="btn-sair-cozinha" style="border-color:rgba(245,197,24,.3);color:var(--ouro)" onclick="localStorage.removeItem('donalds_cozinha_user');location.reload()">Sair</button>
   </div>
 </div>
 
@@ -109,6 +132,40 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+
+  // ===== LOGIN =====
+  const USUARIOS_FIXOS = { 'admin': 'donalds2024', 'gerente': 'gerente123' };
+
+  function entrarCozinha(nome) {
+    document.getElementById('tela-login').style.display = 'none';
+    localStorage.setItem('donalds_cozinha_user', nome);
+  }
+
+  function fazerLogin() {
+    const user = document.getElementById('login-user').value.trim().toLowerCase();
+    const senha = document.getElementById('login-senha').value;
+    if (USUARIOS_FIXOS[user] && USUARIOS_FIXOS[user] === senha) { entrarCozinha(user); return; }
+    getDocs(collection(db,'funcionarios')).then(snap => {
+      const func = snap.docs.map(d=>({id:d.id,...d.data()}))
+        .find(f => f.usuario === user && f.status === 'ativo');
+      if (!func) { document.getElementById('login-erro').style.display = 'block'; return; }
+      let senhaOk = false;
+      try { senhaOk = decodeURIComponent(escape(atob(func.senha||''))) === senha; } catch(e) { senhaOk = false; }
+      if (!senhaOk) { document.getElementById('login-erro').style.display = 'block'; return; }
+      if (!['cozinheiro','admin','gerente'].includes(func.perfil)) {
+        document.getElementById('login-erro').textContent = 'Seu perfil não tem acesso à cozinha.';
+        document.getElementById('login-erro').style.display = 'block';
+        return;
+      }
+      entrarCozinha(func.nome);
+    });
+  }
+
+  const salvo = localStorage.getItem('donalds_cozinha_user');
+  if (salvo) entrarCozinha(salvo);
+
+  document.getElementById('btn-login').addEventListener('click', fazerLogin);
+  document.getElementById('login-senha').addEventListener('keydown', e => { if(e.key==='Enter') fazerLogin(); });
 
   // Relógio
   setInterval(() => {
