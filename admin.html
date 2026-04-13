@@ -1994,10 +1994,16 @@
     const finalizados = todos.filter(p => p.pago && p.pagoEm && p.pagoEm.toDate() >= hoje)
       .sort((a,b) => (b.pagoEm?.seconds||0) - (a.pagoEm?.seconds||0));
 
-    // Métricas
+    // Métricas — considera pagamentos mistos
     const totalHoje = finalizados.reduce((a,p)=>a+(p.total||0),0);
     const porPgto = {PIX:0, Cartão:0, Dinheiro:0};
-    finalizados.forEach(p => { if(porPgto[p.pagamento]!==undefined) porPgto[p.pagamento]+=(p.total||0); });
+    finalizados.forEach(p => {
+      if (p.pagamentos && p.pagamentos.length) {
+        p.pagamentos.forEach(pg => { if(porPgto[pg.forma]!==undefined) porPgto[pg.forma]+=(pg.valor||0); });
+      } else if (porPgto[p.pagamento]!==undefined) {
+        porPgto[p.pagamento]+=(p.total||0);
+      }
+    });
     document.getElementById('cx-aguardando').textContent = prontos.length;
     document.getElementById('cx-finalizados').textContent = finalizados.length;
     document.getElementById('cx-total').textContent = fmt(totalHoje);
@@ -2041,18 +2047,45 @@
     // Histórico
     document.getElementById('caixa-historico').innerHTML = finalizados.length
       ? finalizados.map(p => {
-          const pgtoTag = p.pagamento==='PIX'
-            ? '<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">PIX</span>'
-            : p.pagamento==='Cartão'
-            ? '<span style="background:#dbeafe;color:#1e40af;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">Cartão</span>'
-            : '<span style="background:#fef9c3;color:#854d0e;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">Dinheiro</span>';
+          // Monta tag de pagamento — suporta misto
+          let pgtoHtml = '';
+          if (p.pagamentos && p.pagamentos.length > 1) {
+            pgtoHtml = p.pagamentos.map(pg => {
+              const cor = pg.forma==='PIX' ? 'background:#dcfce7;color:#15803d'
+                : pg.forma==='Cartão' ? 'background:#dbeafe;color:#1e40af'
+                : 'background:#fef9c3;color:#854d0e';
+              return `<span style="${cor};font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;margin-right:3px">${pg.forma} ${fmt(pg.valor)}</span>`;
+            }).join('');
+          } else {
+            const forma = p.pagamento || '—';
+            const cor = forma==='PIX' ? 'background:#dcfce7;color:#15803d'
+              : forma==='Cartão' ? 'background:#dbeafe;color:#1e40af'
+              : forma==='Dinheiro' ? 'background:#fef9c3;color:#854d0e'
+              : 'background:#f1f5f9;color:#475569';
+            pgtoHtml = `<span style="${cor};font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">${forma}</span>`;
+          }
+          // Troco: calcula se houve dinheiro
+          let trocoHtml = '';
+          if (p.pagamentos) {
+            const din = p.pagamentos.find(x => x.forma === 'Dinheiro');
+            if (din && din.valor > 0) {
+              const outrasSomas = p.pagamentos.filter(x=>x.forma!=='Dinheiro').reduce((a,x)=>a+x.valor,0);
+              const dinDevido = Math.max(0, (p.total||0) - outrasSomas);
+              const troco = din.valor - dinDevido;
+              if (troco > 0) trocoHtml = `<div style="font-size:11px;color:#15803d;margin-top:2px">Troco: ${fmt(troco)}</div>`;
+            }
+          }
+          // Pessoas
+          const pessoasHtml = p.pessoas > 1
+            ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">👥 ${p.pessoas} pessoas · ${fmt((p.total||0)/p.pessoas)} cada</div>`
+            : '';
           return `<tr>
             <td><strong>#${p.id.slice(-4).toUpperCase()}</strong></td>
             <td>Mesa ${p.mesa}</td>
             <td style="font-size:12px;color:var(--muted)">${(p.itens||[]).length} item(s)</td>
-            <td style="font-weight:700">${fmt(p.total||0)}</td>
-            <td>${pgtoTag}${p.obsFinanceiro?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${p.obsFinanceiro}</div>`:''}</td>
-            <td style="font-size:12px;color:var(--muted)">${fmtDt(p.pagoEm)}</td>
+            <td><strong>${fmt(p.total||0)}</strong></td>
+            <td>${pgtoHtml}${trocoHtml}${p.obsFinanceiro?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${p.obsFinanceiro}</div>`:''}</td>
+            <td style="font-size:12px;color:var(--muted)">${fmtDt(p.pagoEm)}${pessoasHtml}</td>
           </tr>`;
         }).join('')
       : '<tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">Nenhum pagamento finalizado hoje.</td></tr>';
