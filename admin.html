@@ -1979,6 +1979,8 @@
     } catch(e) { alert('Erro ao salvar. Tente novamente.'); }
     btn.textContent = 'Confirmar recebimento'; btn.disabled = false;
   };
+
+  async function carregarCaixa() {
     const snap = await getDocs(collection(db,'pedidos'));
     const todos = snap.docs.map(d=>({id:d.id,...d.data()}));
     const hoje = new Date(); hoje.setHours(0,0,0,0);
