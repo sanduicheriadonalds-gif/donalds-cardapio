@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Caixa — Donalds'</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--azul:#0d2654;--ouro:#f5c518;--bg:#f4f4f0;--card:#fff;--text:#1a1a1a;--muted:#888;--border:#e8e8e0;--radius:12px;--danger:#dc2626;--success:#16a34a}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+
+  /* LOGIN */
+  #tela-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--azul)}
+  .login-box{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:360px;text-align:center}
+  .login-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--azul);letter-spacing:3px;margin-bottom:2px}
+  .login-sub{font-size:11px;color:var(--muted);letter-spacing:4px;margin-bottom:28px;text-transform:uppercase}
+  .login-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none;color:var(--text);margin-bottom:12px;transition:border-color .2s}
+  .login-input:focus{border-color:var(--azul)}
+  .login-btn{width:100%;padding:14px;background:var(--azul);color:var(--ouro);border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;transition:opacity .2s}
+  .login-btn:hover{opacity:.9}
+  .login-erro{color:var(--danger);font-size:12px;margin-top:8px;display:none}
+
+  /* HEADER */
+  #tela-caixa{display:none}
+  .header{background:var(--azul);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .header-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:3px}
+  .header-logo span{color:var(--ouro)}
+  .header-right{display:flex;align-items:center;gap:12px}
+  .header-user{font-size:12px;color:rgba(255,255,255,.5)}
+  .sair-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:5px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+  .sair-btn:hover{border-color:var(--ouro);color:var(--ouro)}
+  .relogio{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--ouro);letter-spacing:2px}
+
+  /* BODY */
+  .body{padding:20px;max-width:1200px;margin:0 auto}
+  .sec-titulo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul);letter-spacing:2px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+
+  /* MÉTRICAS */
+  .metricas{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+  .metrica{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:16px}
+  .metrica-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+  .metrica-val{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--azul);letter-spacing:1px}
+
+  /* CARDS DE PEDIDOS */
+  .prontos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:28px}
+  .pedido-card{background:#fff;border:2px solid var(--ouro);border-radius:var(--radius);overflow:hidden}
+  .pedido-card-head{background:var(--azul);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+  .pedido-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:1px}
+  .pedido-mesa{font-size:12px;color:rgba(255,255,255,.5)}
+  .pedido-total{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--ouro);letter-spacing:1px}
+  .pedido-status{font-size:11px;margin-top:2px}
+  .pedido-itens{padding:12px 16px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border)}
+  .pedido-adds{padding:6px 16px;font-size:11px;color:#d97706}
+  .pedido-obs{padding:6px 16px;font-size:11px;color:#854d0e;background:#fffbeb}
+  .btn-receber{width:100%;padding:12px;background:var(--azul);color:var(--ouro);border:none;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;transition:opacity .2s}
+  .btn-receber:hover{opacity:.88}
+
+  /* TABELA */
+  .tabela-wrap{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:20px}
+  table{width:100%;border-collapse:collapse}
+  th{padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;background:#fafaf8;border-bottom:1px solid var(--border)}
+  td{padding:12px 16px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#fafaf8}
+
+  /* BOTÃO */
+  .btn-sec{padding:7px 14px;background:transparent;color:var(--azul);border:1.5px solid var(--azul);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+  .btn-sec:hover{background:var(--azul);color:var(--ouro)}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:999;padding:16px}
+  .modal{background:#fff;border-radius:20px 20px 16px 16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px}
+  .modal-titulo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul);letter-spacing:2px;margin-bottom:20px}
+  .campo{margin-bottom:14px}
+  .campo label{display:block;font-size:12px;font-weight:700;color:var(--azul);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .campo input,.campo select{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;color:var(--text);outline:none;background:#fff;transition:border-color .2s}
+  .campo input:focus{border-color:var(--azul)}
+  .campo-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pgto-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .pgto-btn{padding:12px 4px;border:1.5px solid var(--border);border-radius:10px;background:#fff;font-size:13px;font-weight:600;cursor:pointer;text-align:center;color:#555;transition:all .2s;font-family:'Inter',sans-serif}
+  .pgto-btn.ativo{border-color:var(--ouro);background:var(--azul);color:var(--ouro)}
+  .modal-footer{display:flex;gap:10px;margin-top:20px}
+  .btn-prim{padding:10px 20px;background:var(--azul);color:var(--ouro);border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .2s}
+  .btn-prim:hover{opacity:.88}
+  .hidden{display:none!important}
+
+  @media(max-width:600px){
+    .body{padding:12px}
+    .metricas{grid-template-columns:1fr 1fr}
+    table{font-size:12px}
+    td,th{padding:8px 10px}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="tela-login">
+  <div class="login-box">
+    <div class="login-logo">DONALDS'</div>
+    <div class="login-sub">Caixa</div>
+    <input class="login-input" type="text" id="login-user" placeholder="Usuário"/>
+    <input class="login-input" type="password" id="login-senha" placeholder="Senha"/>
+    <button class="login-btn" id="btn-login">ENTRAR</button>
+    <div class="login-erro" id="login-erro">Usuário ou senha incorretos.</div>
+  </div>
+</div>
+
+<!-- TELA CAIXA -->
+<div id="tela-caixa">
+  <div class="header">
+    <div class="header-logo">DONALDS' <span>CAIXA</span></div>
+    <div class="header-right">
+      <div class="relogio" id="relogio">00:00</div>
+      <div class="header-user" id="header-user"></div>
+      <button class="sair-btn" id="btn-sair">Sair</button>
+    </div>
+  </div>
+
+  <div class="body">
+    <!-- MÉTRICAS -->
+    <div class="metricas">
+      <div class="metrica"><div class="metrica-label">Aguardando</div><div class="metrica-val" id="cx-aguardando" style="color:#d97706">0</div></div>
+      <div class="metrica"><div class="metrica-label">Finalizados hoje</div><div class="metrica-val" id="cx-finalizados">0</div></div>
+      <div class="metrica"><div class="metrica-label">Total recebido</div><div class="metrica-val" id="cx-total">R$ 0</div></div>
+      <div class="metrica"><div class="metrica-label">PIX</div><div class="metrica-val" id="cx-pix" style="font-size:20px">R$ 0</div></div>
+      <div class="metrica"><div class="metrica-label">Cartão</div><div class="metrica-val" id="cx-cartao" style="font-size:20px">R$ 0</div></div>
+      <div class="metrica"><div class="metrica-label">Dinheiro</div><div class="metrica-val" id="cx-dinheiro" style="font-size:20px">R$ 0</div></div>
+    </div>
+
+    <!-- PRONTOS PARA PAGAR -->
+    <div class="sec-titulo">
+      Prontos para pagar
+      <button class="btn-sec" id="btn-atualizar">Atualizar</button>
+    </div>
+    <div class="prontos-grid" id="prontos-grid">
+      <div style="color:var(--muted);font-size:13px;padding:20px">Carregando...</div>
+    </div>
+
+    <!-- FINALIZADOS HOJE -->
+    <div class="sec-titulo">Finalizados hoje</div>
+    <div class="tabela-wrap">
+      <table>
+        <thead><tr><th>Pedido</th><th>Mesa</th><th>Itens</th><th>Total</th><th>Pagamento</th><th>Horário</th></tr></thead>
+        <tbody id="historico-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGAMENTO -->
+<div class="modal-overlay hidden" id="modal-pgto">
+  <div class="modal">
+    <div class="modal-titulo">Finalizar pagamento</div>
+    <div style="background:#f8f8f4;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Pedido <strong id="mp-num"></strong> · Mesa <strong id="mp-mesa"></strong></div>
+      <div id="mp-itens" style="font-size:13px;color:var(--text);margin-bottom:8px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:8px">
+        <span style="font-size:13px;font-weight:700">Total</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--azul);letter-spacing:1px" id="mp-total"></span>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Forma de pagamento</label>
+      <div class="pgto-grid">
+        <button class="pgto-btn ativo" id="mp-pix" data-pgto="PIX">PIX</button>
+        <button class="pgto-btn" id="mp-cartao" data-pgto="Cartão">Cartão</button>
+        <button class="pgto-btn" id="mp-dinheiro" data-pgto="Dinheiro">Dinheiro</button>
+      </div>
+      <input type="hidden" id="mp-pgto-val" value="PIX"/>
+    </div>
+    <div id="troco-wrap" style="display:none">
+      <div class="campo-row">
+        <div class="campo">
+          <label>Valor recebido (R$)</label>
+          <input type="number" id="mp-recebido" step="0.01" min="0" placeholder="Ex: 50,00"/>
+        </div>
+        <div class="campo">
+          <label>Troco</label>
+          <input type="text" id="mp-troco" readonly style="background:#f0fdf4;color:#15803d;font-weight:700;font-size:15px"/>
+        </div>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Observação (opcional)</label>
+      <input type="text" id="mp-obs" placeholder="Ex: cortesia, desconto..."/>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" id="btn-cancelar-pgto">Cancelar</button>
+      <button class="btn-prim" id="btn-confirmar-pgto" style="flex:1;padding:13px;font-size:15px">Confirmar recebimento</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
+    authDomain: "donals-e00f4.firebaseapp.com",
+    projectId: "donals-e00f4",
+    storageBucket: "donals-e00f4.firebasestorage.app",
+    messagingSenderId: "391280941743",
+    appId: "1:391280941743:web:1f9db3a7dc69896b0c125a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const USUARIOS = {
+    'caixa': 'caixa2024',
+    'admin': 'donalds2024',
+    'gerente': 'gerente123'
+  };
+
+  // Relógio
+  setInterval(() => {
+    document.getElementById('relogio').textContent =
+      new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }, 1000);
+
+  // ===== LOGIN =====
+  function entrar(user) {
+    document.getElementById('tela-login').style.display = 'none';
+    document.getElementById('tela-caixa').style.display = 'block';
+    document.getElementById('header-user').textContent = user;
+    localStorage.setItem('donalds_caixa_user', user);
+    carregarCaixa();
+  }
+
+  function fazerLogin() {
+    const user = document.getElementById('login-user').value.trim();
+    const senha = document.getElementById('login-senha').value;
+    if (USUARIOS[user] && USUARIOS[user] === senha) {
+      entrar(user);
+    } else {
+      document.getElementById('login-erro').style.display = 'block';
+    }
+  }
+
+  const salvo = localStorage.getItem('donalds_caixa_user');
+  if (salvo && USUARIOS[salvo]) entrar(salvo);
+
+  document.getElementById('btn-login').addEventListener('click', fazerLogin);
+  document.getElementById('login-senha').addEventListener('keydown', e => { if(e.key==='Enter') fazerLogin(); });
+  document.getElementById('btn-sair').addEventListener('click', () => {
+    localStorage.removeItem('donalds_caixa_user');
+    location.reload();
+  });
+
+  // ===== CAIXA =====
+  const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+  const fmtHora = ts => ts ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
+  let pedidoAtual = null;
+
+  async function carregarCaixa() {
+    const snap = await getDocs(collection(db,'pedidos'));
+    const todos = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+    const aguardando = todos.filter(p => !p.pago)
+      .sort((a,b) => (a.criadoEm?.seconds||0) - (b.criadoEm?.seconds||0));
+    const finalizados = todos.filter(p => p.pago && p.pagoEm && p.pagoEm.toDate() >= hoje)
+      .sort((a,b) => (b.pagoEm?.seconds||0) - (a.pagoEm?.seconds||0));
+
+    const totalHoje = finalizados.reduce((a,p)=>a+(p.total||0),0);
+    const porPgto = {PIX:0, Cartão:0, Dinheiro:0};
+    finalizados.forEach(p => { if(porPgto[p.pagamento]!==undefined) porPgto[p.pagamento]+=(p.total||0); });
+
+    document.getElementById('cx-aguardando').textContent = aguardando.length;
+    document.getElementById('cx-finalizados').textContent = finalizados.length;
+    document.getElementById('cx-total').textContent = fmt(totalHoje);
+    document.getElementById('cx-pix').textContent = fmt(porPgto['PIX']);
+    document.getElementById('cx-cartao').textContent = fmt(porPgto['Cartão']);
+    document.getElementById('cx-dinheiro').textContent = fmt(porPgto['Dinheiro']);
+
+    // Cards
+    document.getElementById('prontos-grid').innerHTML = aguardando.length
+      ? aguardando.map(p => {
+          const itensStr = (p.itens||[]).map(i=>`${i.quantidade > 1 ? i.quantidade+'x ' : ''}${i.nome}`).join(' · ');
+          const addStr = [...new Set((p.itens||[]).flatMap(i=>(i.adicionais||[]).map(a=>a.nome)).filter(Boolean))];
+          const statusTag = p.status==='novo'
+            ? '<span style="background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:8px;font-weight:700;font-size:11px">Novo</span>'
+            : p.status==='preparo'
+            ? '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:8px;font-weight:700;font-size:11px">Em preparo</span>'
+            : '<span style="background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:8px;font-weight:700;font-size:11px">✓ Pronto</span>';
+          return `<div class="pedido-card">
+            <div class="pedido-card-head">
+              <div>
+                <div class="pedido-num">#${p.id.slice(-4).toUpperCase()}</div>
+                <div class="pedido-mesa">Mesa ${p.mesa}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="pedido-total">${fmt(p.total||0)}</div>
+                <div class="pedido-status">${statusTag}</div>
+              </div>
+            </div>
+            <div class="pedido-itens">${itensStr||'—'}</div>
+            ${addStr.length ? `<div class="pedido-adds">+ ${addStr.join(', ')}</div>` : ''}
+            ${p.observacoes ? `<div class="pedido-obs">Obs: ${p.observacoes}</div>` : ''}
+            <div style="padding:10px 16px">
+              <button class="btn-receber" data-pedido-id="${p.id}">Receber pagamento</button>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:var(--radius);grid-column:1/-1">Nenhum pedido aguardando pagamento</div>';
+
+    // Histórico
+    document.getElementById('historico-tbody').innerHTML = finalizados.length
+      ? finalizados.map(p => {
+          const pgtoTag = p.pagamento==='PIX'
+            ? '<span style="background:#dcfce7;color:#15803d;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">PIX</span>'
+            : p.pagamento==='Cartão'
+            ? '<span style="background:#dbeafe;color:#1e40af;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">Cartão</span>'
+            : '<span style="background:#fef9c3;color:#854d0e;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">Dinheiro</span>';
+          return `<tr>
+            <td><strong>#${p.id.slice(-4).toUpperCase()}</strong></td>
+            <td>Mesa ${p.mesa}</td>
+            <td style="color:var(--muted)">${(p.itens||[]).length} item(s)</td>
+            <td><strong>${fmt(p.total||0)}</strong></td>
+            <td>${pgtoTag}${p.obsFinanceiro?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${p.obsFinanceiro}</div>`:''}</td>
+            <td style="color:var(--muted)">${fmtHora(p.pagoEm)}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">Nenhum pagamento finalizado hoje.</td></tr>';
+  }
+
+  // Auto-refresh a cada 15s
+  setInterval(carregarCaixa, 15000);
+
+  // ===== MODAL PAGAMENTO =====
+  function abrirModal(pedido) {
+    pedidoAtual = pedido;
+    document.getElementById('mp-num').textContent = '#' + pedido.id.slice(-4).toUpperCase();
+    document.getElementById('mp-mesa').textContent = pedido.mesa;
+    document.getElementById('mp-total').textContent = fmt(pedido.total||0);
+    document.getElementById('mp-itens').innerHTML = (pedido.itens||[]).map(i => {
+      const adds = (i.adicionais||[]).map(a=>a.nome).join(', ');
+      return `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px">
+        <div>${i.quantidade > 1 ? i.quantidade+'x ' : ''}${i.nome}${adds?`<span style="font-size:11px;color:var(--muted)"> + ${adds}</span>`:''}</div>
+        <div style="color:var(--muted)">${fmt(i.subtotal||i.preco)}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('mp-obs').value = '';
+    document.getElementById('mp-recebido').value = '';
+    document.getElementById('mp-troco').value = '';
+    document.getElementById('troco-wrap').style.display = 'none';
+    selecionarPgto('PIX');
+    document.getElementById('modal-pgto').classList.remove('hidden');
+  }
+
+  function selecionarPgto(tipo) {
+    ['PIX','Cartão','Dinheiro'].forEach(t => {
+      const id = 'mp-' + t.toLowerCase().replace('ã','a');
+      document.getElementById(id)?.classList.toggle('ativo', t === tipo);
+    });
+    document.getElementById('mp-pgto-val').value = tipo;
+    document.getElementById('troco-wrap').style.display = tipo === 'Dinheiro' ? 'block' : 'none';
+    calcularTroco();
+  }
+
+  function calcularTroco() {
+    const recebido = parseFloat(document.getElementById('mp-recebido').value) || 0;
+    const total = pedidoAtual?.total || 0;
+    const troco = recebido - total;
+    document.getElementById('mp-troco').value = troco >= 0 ? fmt(troco) : '—';
+    document.getElementById('mp-troco').style.color = troco >= 0 ? '#15803d' : '#dc2626';
+  }
+
+  async function finalizarPagamento() {
+    if (!pedidoAtual) return;
+    const btn = document.getElementById('btn-confirmar-pgto');
+    btn.textContent = 'Salvando...'; btn.disabled = true;
+    try {
+      await updateDoc(doc(db,'pedidos',pedidoAtual.id), {
+        pago: true,
+        pagamento: document.getElementById('mp-pgto-val').value,
+        pagoEm: serverTimestamp(),
+        obsFinanceiro: document.getElementById('mp-obs').value || null,
+        status: 'entregue',
+      });
+      document.getElementById('modal-pgto').classList.add('hidden');
+      pedidoAtual = null;
+      carregarCaixa();
+    } catch(e) { alert('Erro ao salvar. Tente novamente.'); }
+    btn.textContent = 'Confirmar recebimento'; btn.disabled = false;
+  }
+
+  // ===== EVENT LISTENERS =====
+  document.getElementById('btn-atualizar').addEventListener('click', carregarCaixa);
+  document.getElementById('btn-cancelar-pgto').addEventListener('click', () => {
+    document.getElementById('modal-pgto').classList.add('hidden');
+    pedidoAtual = null;
+  });
+  document.getElementById('btn-confirmar-pgto').addEventListener('click', finalizarPagamento);
+  document.getElementById('mp-recebido').addEventListener('input', calcularTroco);
+
+  document.addEventListener('click', e => {
+    // Botão receber pagamento
+    const pedidoBtn = e.target.closest('[data-pedido-id]');
+    if (pedidoBtn) {
+      getDocs(collection(db,'pedidos')).then(snap => {
+        const d = snap.docs.find(x => x.id === pedidoBtn.dataset.pedidoId);
+        if (d) abrirModal({id: d.id, ...d.data()});
+      });
+    }
+    // Botões de forma de pagamento
+    const pgtoBtn = e.target.closest('[data-pgto]');
+    if (pgtoBtn && document.getElementById('modal-pgto').classList.contains('hidden') === false) {
+      selecionarPgto(pgtoBtn.dataset.pgto);
+    }
+  });
+</script>
+</body>
+</html>
