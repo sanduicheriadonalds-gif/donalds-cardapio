@@ -273,7 +273,13 @@
       </div>
 
       <!-- PEDIDOS PRONTOS -->
-      <div class="sec-titulo" style="font-size:16px;margin-bottom:12px">Prontos para pagar <button class="btn-sec" id="btn-atualizar-caixa" style="font-size:11px;padding:5px 12px">Atualizar</button></div>
+      <div class="sec-titulo" style="font-size:16px;margin-bottom:12px">
+        Prontos para pagar
+        <div style="display:flex;gap:8px">
+          <button class="btn-sec" id="btn-atualizar-caixa" style="font-size:11px;padding:5px 12px">Atualizar</button>
+          <button class="btn-prim" id="btn-fechar-caixa" style="font-size:11px;padding:5px 14px;background:#16a34a">🔒 Fechar Caixa</button>
+        </div>
+      </div>
       <div id="caixa-prontos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:28px"></div>
 
       <!-- HISTÓRICO DO DIA -->
@@ -283,6 +289,16 @@
           <thead><tr><th>Pedido</th><th>Mesa</th><th>Itens</th><th>Total</th><th>Pagamento</th><th>Horário</th></tr></thead>
           <tbody id="caixa-historico"></tbody>
         </table>
+      </div>
+
+      <!-- ESTOQUE BAIXO -->
+      <div class="sec-titulo" style="font-size:16px;margin-bottom:8px;margin-top:8px">
+        ⚠️ Estoque baixo
+        <button class="btn-sec" id="btn-wpp-estoque" style="font-size:11px;padding:5px 12px;border-color:#25d366;color:#25d366">📲 Enviar via WhatsApp</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Ingredientes que precisam de reposição.</p>
+      <div id="estoque-baixo-lista" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+        <div style="color:var(--muted);font-size:13px">Carregando...</div>
       </div>
     </div>
 
@@ -371,6 +387,76 @@
       <div id="boletos-lista" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL FECHAMENTO DE CAIXA -->
+<div class="modal-overlay hidden" id="modal-fechamento">
+  <div class="modal" style="max-width:600px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="modal-titulo" style="margin-bottom:0">🔒 FECHAMENTO DE CAIXA</div>
+      <div style="font-size:12px;color:var(--muted)" id="fech-data"></div>
+    </div>
+
+    <!-- Resumo financeiro -->
+    <div style="background:var(--azul);border-radius:14px;padding:20px;margin-bottom:16px">
+      <div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">Resumo do dia</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px">Total faturado</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--ouro);letter-spacing:1px" id="fech-total">R$ 0,00</div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:4px">Pedidos finalizados</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:1px" id="fech-pedidos">0</div>
+        </div>
+      </div>
+      <!-- Por forma de pagamento -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:3px">PIX</div>
+          <div style="font-size:16px;font-weight:700;color:#4ade80" id="fech-pix">R$ 0,00</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:3px">Cartão</div>
+          <div style="font-size:16px;font-weight:700;color:#60a5fa" id="fech-cartao">R$ 0,00</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:3px">Dinheiro</div>
+          <div style="font-size:16px;font-weight:700;color:var(--ouro)" id="fech-dinheiro">R$ 0,00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ticket médio e pedidos pendentes -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:#f8f8f4;border-radius:10px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ticket médio</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul)" id="fech-ticket">R$ 0,00</div>
+      </div>
+      <div style="background:#fff8f0;border-radius:10px;padding:14px;border:1px solid #fed7aa" id="fech-pendentes-wrap">
+        <div style="font-size:11px;color:#c2410c;margin-bottom:4px">Pedidos pendentes</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#ea580c" id="fech-pendentes">0</div>
+        <div style="font-size:11px;color:#c2410c" id="fech-pendentes-val"></div>
+      </div>
+    </div>
+
+    <!-- Lista de pedidos do dia -->
+    <div style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:16px">
+      <div id="fech-lista-pedidos" style="font-size:12px"></div>
+    </div>
+
+    <!-- Observação -->
+    <div class="campo">
+      <label>Observação do fechamento (opcional)</label>
+      <textarea id="fech-obs" rows="2" placeholder="Ex: caixa conferido, sobrou R$ 50 em espécie..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Inter',sans-serif;resize:none;outline:none"></textarea>
+    </div>
+
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px">
+      <button class="btn-sec" onclick="fecharModal('modal-fechamento')">Fechar</button>
+      <button class="btn-sec" id="btn-imprimir-fechamento" style="border-color:#6366f1;color:#6366f1">🖨️ Imprimir</button>
+      <button class="btn-sec" id="btn-wpp-fechamento" style="border-color:#25d366;color:#25d366">📲 WhatsApp</button>
+    </div>
   </div>
 </div>
 
@@ -1187,6 +1273,10 @@
     }
 
     if (id === 'btn-atualizar-caixa') carregarCaixa();
+    if (id === 'btn-fechar-caixa') abrirFechamento();
+    if (id === 'btn-imprimir-fechamento') imprimirFechamento();
+    if (id === 'btn-wpp-fechamento') enviarWppFechamento();
+    if (id === 'btn-wpp-estoque') enviarWppEstoque();
 
     if (id === 'btn-finalizar-pgto') window.finalizarPagamento();
 
@@ -1289,7 +1379,7 @@
     if (aba === 'dashboard') carregarDashboard();
     if (aba === 'entrada') { carregarMargens(); carregarEntradas(); }
     if (aba === 'boletos') carregarBoletos();
-    if (aba === 'caixa') carregarCaixa();
+    if (aba === 'caixa') { carregarCaixa(); carregarEstoqueBaixoAba(); }
     if (aba === 'clientes') carregarClientes();
     if (aba === 'adicionais') carregarAdicionais();
     if (aba === 'funcionarios') carregarFuncionarios();
@@ -2089,6 +2179,205 @@
           </tr>`;
         }).join('')
       : '<tr><td colspan="6" style="text-align:center;padding:20px;color:#aaa">Nenhum pagamento finalizado hoje.</td></tr>';
+  }
+
+  // ===== FECHAMENTO DE CAIXA =====
+  async function abrirFechamento() {
+    const snap = await getDocs(collection(db,'pedidos'));
+    const snapE = await getDocs(collection(db,'estoque'));
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const todos = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const finalizados = todos.filter(p => p.pago && p.pagoEm && p.pagoEm.toDate() >= hoje)
+      .sort((a,b) => (a.pagoEm?.seconds||0) - (b.pagoEm?.seconds||0));
+    const pendentes = todos.filter(p => !p.pago);
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const fmtHora = ts => ts ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
+
+    const total = finalizados.reduce((a,p)=>a+(p.total||0),0);
+    const ticket = finalizados.length ? total/finalizados.length : 0;
+    const porPgto = {PIX:0, Cartão:0, Dinheiro:0};
+    finalizados.forEach(p => {
+      if (p.pagamentos?.length) p.pagamentos.forEach(pg => { if(porPgto[pg.forma]!==undefined) porPgto[pg.forma]+=pg.valor||0; });
+      else if (porPgto[p.pagamento]!==undefined) porPgto[p.pagamento]+=(p.total||0);
+    });
+
+    const agora = new Date();
+    document.getElementById('fech-data').textContent =
+      agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('fech-total').textContent = fmt(total);
+    document.getElementById('fech-pedidos').textContent = finalizados.length;
+    document.getElementById('fech-pix').textContent = fmt(porPgto['PIX']);
+    document.getElementById('fech-cartao').textContent = fmt(porPgto['Cartão']);
+    document.getElementById('fech-dinheiro').textContent = fmt(porPgto['Dinheiro']);
+    document.getElementById('fech-ticket').textContent = fmt(ticket);
+    document.getElementById('fech-pendentes').textContent = pendentes.length;
+    const totalPend = pendentes.reduce((a,p)=>a+(p.total||0),0);
+    document.getElementById('fech-pendentes-val').textContent = pendentes.length ? `Em aberto: ${fmt(totalPend)}` : 'Nenhum em aberto ✓';
+
+    // Lista de pedidos
+    document.getElementById('fech-lista-pedidos').innerHTML = finalizados.length
+      ? finalizados.map(p => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border)">
+          <span style="font-weight:600">#${p.id.slice(-4).toUpperCase()} · Mesa ${p.mesa}</span>
+          <span style="color:var(--muted)">${fmtHora(p.pagoEm)}</span>
+          <span style="font-weight:700;color:var(--azul)">${fmt(p.total||0)}</span>
+          <span style="font-size:11px;color:var(--muted)">${p.pagamento||'Misto'}</span>
+        </div>`).join('')
+      : '<div style="padding:16px;text-align:center;color:var(--muted)">Nenhum pedido finalizado hoje.</div>';
+
+    // Estoque baixo
+    const estItens = snapE.docs.map(d=>({id:d.id,...d.data()}));
+    const baixo = estItens.filter(e => e.minimo > 0 && (e.quantidade||0) < e.minimo * 2)
+      .sort((a,b) => (a.quantidade/Math.max(a.minimo,0.01)) - (b.quantidade/Math.max(b.minimo,0.01)));
+    renderEstoqueBaixo(baixo);
+
+    document.getElementById('modal-fechamento').classList.remove('hidden');
+  }
+
+  function renderEstoqueBaixo(baixo) {
+    const lista = document.getElementById('estoque-baixo-lista');
+    if (!lista) return;
+    if (!baixo.length) {
+      lista.innerHTML = '<span style="color:var(--success);font-size:13px;font-weight:600">✓ Estoque OK — nenhum item abaixo do mínimo</span>';
+      return;
+    }
+    lista.innerHTML = baixo.map(e => {
+      const pct = e.minimo > 0 ? e.quantidade / e.minimo : 1;
+      const cor = pct <= 0 ? '#dc2626' : pct < 1 ? '#dc2626' : '#d97706';
+      const bg = pct <= 0 ? '#fee2e2' : pct < 1 ? '#fee2e2' : '#fef3c7';
+      return `<div style="background:${bg};border:1px solid ${cor}40;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">${pct<=0?'🚨':pct<1?'⚠️':'📉'}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:${cor}">${e.nome}</div>
+          <div style="font-size:11px;color:${cor}80">Tem: ${Number(e.quantidade||0).toFixed(2)} ${e.unidade||''} · Mín: ${Number(e.minimo).toFixed(2)} ${e.unidade||''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function carregarEstoqueBaixoAba() {
+    const snap = await getDocs(collection(db,'estoque'));
+    const itens = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const baixo = itens.filter(e => e.minimo > 0 && (e.quantidade||0) < e.minimo * 2)
+      .sort((a,b) => (a.quantidade/Math.max(a.minimo,0.01)) - (b.quantidade/Math.max(b.minimo,0.01)));
+    renderEstoqueBaixo(baixo);
+  }
+
+  function gerarTextoFechamento() {
+    const total = document.getElementById('fech-total').textContent;
+    const pedidos = document.getElementById('fech-pedidos').textContent;
+    const pix = document.getElementById('fech-pix').textContent;
+    const cartao = document.getElementById('fech-cartao').textContent;
+    const dinheiro = document.getElementById('fech-dinheiro').textContent;
+    const ticket = document.getElementById('fech-ticket').textContent;
+    const pendentes = document.getElementById('fech-pendentes').textContent;
+    const obs = document.getElementById('fech-obs')?.value || '';
+    const data = document.getElementById('fech-data').textContent;
+    return `🍔 *DONALDS' — FECHAMENTO DE CAIXA*\n📅 ${data}\n\n` +
+      `💰 *Total faturado:* ${total}\n` +
+      `🧾 *Pedidos finalizados:* ${pedidos}\n` +
+      `🎫 *Ticket médio:* ${ticket}\n\n` +
+      `💳 *Por forma de pagamento:*\n` +
+      `  ✅ PIX: ${pix}\n` +
+      `  💳 Cartão: ${cartao}\n` +
+      `  💵 Dinheiro: ${dinheiro}\n\n` +
+      (pendentes > 0 ? `⚠️ *Pedidos em aberto:* ${pendentes}\n\n` : '') +
+      (obs ? `📝 *Obs:* ${obs}\n\n` : '') +
+      `_Gerado pelo sistema Donalds'_`;
+  }
+
+  async function gerarTextoEstoqueBaixo() {
+    const snap = await getDocs(collection(db,'estoque'));
+    const itens = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const baixo = itens.filter(e => e.minimo > 0 && (e.quantidade||0) < e.minimo * 2)
+      .sort((a,b) => (a.quantidade/Math.max(a.minimo,0.01)) - (b.quantidade/Math.max(b.minimo,0.01)));
+    if (!baixo.length) return '✅ Estoque OK — nenhum item abaixo do mínimo';
+    const lista = baixo.map(e => {
+      const pct = e.minimo > 0 ? e.quantidade/e.minimo : 1;
+      const emoji = pct <= 0 ? '🚨' : pct < 1 ? '⚠️' : '📉';
+      return `${emoji} *${e.nome}* — Tem: ${Number(e.quantidade||0).toFixed(2)} ${e.unidade||''} (mín: ${Number(e.minimo).toFixed(2)})`;
+    }).join('\n');
+    return `🛒 *DONALDS' — ESTOQUE BAIXO*\n📅 ${new Date().toLocaleDateString('pt-BR')}\n\n${lista}\n\n_Lista de compras gerada pelo sistema_`;
+  }
+
+  function imprimirFechamento() {
+    const total = document.getElementById('fech-total').textContent;
+    const pedidos = document.getElementById('fech-pedidos').textContent;
+    const pix = document.getElementById('fech-pix').textContent;
+    const cartao = document.getElementById('fech-cartao').textContent;
+    const dinheiro = document.getElementById('fech-dinheiro').textContent;
+    const ticket = document.getElementById('fech-ticket').textContent;
+    const pendentes = document.getElementById('fech-pendentes').textContent;
+    const obs = document.getElementById('fech-obs')?.value || '';
+    const data = document.getElementById('fech-data').textContent;
+    const listaPedidos = document.getElementById('fech-lista-pedidos').innerHTML;
+    const estoqueBaixo = document.getElementById('estoque-baixo-lista').innerHTML;
+    const win = window.open('','_blank');
+    win.document.write(`<!DOCTYPE html><html><head>
+      <meta charset="UTF-8"/>
+      <title>Fechamento de Caixa — Donalds'</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',sans-serif;padding:24px;color:#1a1a1a;max-width:600px;margin:0 auto}
+        h1{font-size:22px;margin-bottom:4px;color:#0d2654}
+        .sub{font-size:12px;color:#888;margin-bottom:20px}
+        .box{background:#f4f4f0;border-radius:10px;padding:16px;margin-bottom:16px}
+        .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e8e8e0;font-size:14px}
+        .row:last-child{border-bottom:none}
+        .total{font-size:24px;font-weight:800;color:#0d2654}
+        .label{color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+        .pgto-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+        .pgto-item{background:#fff;border:1px solid #e8e8e0;border-radius:8px;padding:12px;text-align:center}
+        .pgto-val{font-size:16px;font-weight:700;margin-top:4px}
+        .pedidos-lista{max-height:200px;overflow:auto;border:1px solid #e8e8e0;border-radius:8px;margin-bottom:16px}
+        .pedido-row{display:flex;justify-content:space-between;padding:7px 12px;border-bottom:1px solid #f0f0f0;font-size:12px}
+        .alert{background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:8px 12px;font-size:12px;color:#854d0e;margin-bottom:8px}
+        .obs-box{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px;font-size:13px;margin-bottom:16px}
+        .est-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e8e8e0;font-size:13px}
+        @media print{body{padding:12px}button{display:none}}
+      </style>
+    </head><body>
+      <h1>🍔 DONALDS' — FECHAMENTO DE CAIXA</h1>
+      <div class="sub">${data}</div>
+
+      <div class="box">
+        <div class="label">Total faturado</div>
+        <div class="total">${total}</div>
+        <div style="display:flex;gap:20px;margin-top:8px;font-size:13px;color:#555">
+          <span>${pedidos} pedidos</span>
+          <span>Ticket médio: ${ticket}</span>
+          ${parseInt(pendentes) > 0 ? `<span style="color:#dc2626">⚠ ${pendentes} em aberto</span>` : '<span style="color:#16a34a">✓ Todos pagos</span>'}
+        </div>
+      </div>
+
+      <div class="pgto-grid">
+        <div class="pgto-item"><div class="label">PIX</div><div class="pgto-val" style="color:#16a34a">${pix}</div></div>
+        <div class="pgto-item"><div class="label">Cartão</div><div class="pgto-val" style="color:#2563eb">${cartao}</div></div>
+        <div class="pgto-item"><div class="label">Dinheiro</div><div class="pgto-val" style="color:#d97706">${dinheiro}</div></div>
+      </div>
+
+      <div class="label" style="margin-bottom:8px">Pedidos do dia</div>
+      <div class="pedidos-lista">${listaPedidos}</div>
+
+      ${obs ? `<div class="obs-box">📝 ${obs}</div>` : ''}
+
+      <div class="label" style="margin-bottom:8px">⚠️ Estoque baixo</div>
+      <div>${estoqueBaixo}</div>
+
+      <div style="margin-top:20px;text-align:center;font-size:11px;color:#aaa">Gerado em ${data} · Sistema Donalds'</div>
+      <script>window.onload=()=>window.print()<\/script>
+    </body></html>`);
+    win.document.close();
+  }
+
+  function enviarWppFechamento() {
+    const texto = gerarTextoFechamento();
+    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+  }
+
+  async function enviarWppEstoque() {
+    const texto = await gerarTextoEstoqueBaixo();
+    window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
   }
 
   window.fecharModal = id => document.getElementById(id).classList.add('hidden');
