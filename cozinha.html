@@ -271,7 +271,7 @@
           ? `<button class="acao-btn iniciar" onclick="window._upStatus('${p.id}','preparo')">Iniciar preparo</button>`
           : status === 'preparo'
           ? `<button class="acao-btn pronto" onclick="window._upStatus('${p.id}','pronto')">Marcar pronto</button>`
-          : `<span style="font-size:11px;color:#4ade80;font-weight:700;padding:7px 12px">✓ Aguardando retirada</span>`;
+          : `<button class="acao-btn entregue" onclick="window._upStatus('${p.id}','entregue_mesa')">Entregue na mesa ✓</button>`;
         return `<div class="pedido ${status}">
           <div class="pedido-head">
             <div>
@@ -299,7 +299,7 @@
     onSnapshot(collection(db,'pedidos'), snap => {
       const pedidos = snap.docs
         .map(d => ({id:d.id,...d.data()}))
-        .filter(p => p.status !== 'entregue')
+        .filter(p => p.status !== 'entregue' && p.status !== 'entregue_mesa')
         .sort((a,b) => (b.criadoEm?.seconds||0) - (a.criadoEm?.seconds||0))
         .slice(0, 40);
       renderPedidos(pedidos);
