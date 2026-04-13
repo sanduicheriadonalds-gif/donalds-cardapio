@@ -1609,10 +1609,9 @@
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
     const fmtDt = ts => ts ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '--';
 
-    // Todos os pedidos não pagos (independente do status da cozinha)
-    const prontos = todos.filter(p =>
-      !p.pago && p.status !== 'entregue'
-    ).sort((a,b) => (a.criadoEm?.seconds||0) - (b.criadoEm?.seconds||0));
+    // Todos os pedidos não pagos — aparecem no caixa independente do status
+    const prontos = todos.filter(p => !p.pago)
+      .sort((a,b) => (a.criadoEm?.seconds||0) - (b.criadoEm?.seconds||0));
     // Finalizados hoje
     const finalizados = todos.filter(p => p.pago && p.pagoEm && p.pagoEm.toDate() >= hoje)
       .sort((a,b) => (b.pagoEm?.seconds||0) - (a.pagoEm?.seconds||0));
