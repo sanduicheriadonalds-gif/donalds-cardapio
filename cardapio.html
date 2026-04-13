@@ -557,32 +557,45 @@
     const item = cardapioData.find(x => x.id === id);
     const semAdicionais = ['bebidas', 'combos'].includes(item?.categoria);
     if (adicionaisData.length > 0 && !semAdicionais) {
-      // Abre modal de adicionais
-      itemPendente = id;
-      adicionaisSelecionados = {};
-      const item = cardapioData.find(x => x.id === id);
-      document.getElementById('modal-add-sub').textContent = item ? `Para o ${item.nome}` : 'Personalize seu pedido';
-      const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
-      document.getElementById('modal-add-lista').innerHTML = adicionaisData.map(a => `
-        <div class="adicional-item" id="add-${a.id}" onclick="toggleAdicional('${a.id}')">
-          <div class="adicional-check">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="adicional-info">
-            <div class="adicional-nome">${a.nome}</div>
-            <div class="adicional-preco">+ ${fmt(a.preco)}</div>
-          </div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--azul)">${fmt(a.preco)}</div>
-        </div>`).join('');
-      atualizarBtnConfirmar();
-      document.getElementById('modal-adicionais').style.display = 'flex';
+      abrirModalAdicionais(id);
     } else {
-      // Sem adicionais cadastrados, adiciona direto
-      adicionarAoCarrinho(id, []);
+      adicionarUnidade(id, []);
     }
   };
+
+  // Ao clicar + quando já tem unidades, também abre modal
+  window._addMaisUm = id => {
+    const item = cardapioData.find(x => x.id === id);
+    const semAdicionais = ['bebidas', 'combos'].includes(item?.categoria);
+    if (adicionaisData.length > 0 && !semAdicionais) {
+      abrirModalAdicionais(id);
+    } else {
+      adicionarUnidade(id, []);
+    }
+  };
+
+  function abrirModalAdicionais(id) {
+    itemPendente = id;
+    adicionaisSelecionados = {};
+    const item = cardapioData.find(x => x.id === id);
+    document.getElementById('modal-add-sub').textContent = item ? `Para o ${item.nome}` : 'Personalize seu pedido';
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    document.getElementById('modal-add-lista').innerHTML = adicionaisData.map(a => `
+      <div class="adicional-item" id="add-${a.id}" onclick="toggleAdicional('${a.id}')">
+        <div class="adicional-check">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="adicional-info">
+          <div class="adicional-nome">${a.nome}</div>
+          <div class="adicional-preco">+ ${fmt(a.preco)}</div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--azul)">${fmt(a.preco)}</div>
+      </div>`).join('');
+    atualizarBtnConfirmar();
+    document.getElementById('modal-adicionais').style.display = 'flex';
+  }
 
   window.toggleAdicional = id => {
     const el = document.getElementById('add-' + id);
@@ -602,45 +615,35 @@
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
     const totalExtra = selecionados.reduce((a, x) => a + x.preco, 0);
     const btn = document.getElementById('btn-confirmar-add');
-    btn.textContent = selecionados.length > 0
-      ? `ADICIONAR + ${fmt(totalExtra)}`
-      : 'ADICIONAR';
+    btn.textContent = selecionados.length > 0 ? `ADICIONAR + ${fmt(totalExtra)}` : 'ADICIONAR';
   }
 
   window.fecharAdicionais = () => {
     document.getElementById('modal-adicionais').style.display = 'none';
     if (itemPendente) {
-      // Adiciona sem adicionais ao fechar
-      adicionarAoCarrinho(itemPendente, []);
+      adicionarUnidade(itemPendente, []);
       itemPendente = null;
     }
   };
 
   window.confirmarAdicionais = () => {
     document.getElementById('modal-adicionais').style.display = 'none';
-    adicionarAoCarrinho(itemPendente, Object.values(adicionaisSelecionados));
+    adicionarUnidade(itemPendente, Object.values(adicionaisSelecionados));
     itemPendente = null;
   };
 
-  function adicionarAoCarrinho(id, adicionais) {
-    if (!carrinho[id]) {
-      carrinho[id] = { quantidade: 0, adicionais: [] };
-    }
-    carrinho[id].quantidade += 1;
-    // Mescla adicionais (adiciona os novos)
-    adicionais.forEach(a => {
-      if (!carrinho[id].adicionais.find(x => x.id === a.id)) {
-        carrinho[id].adicionais.push(a);
-      }
-    });
+  // Carrinho: { itemId: [ {adicionais:[]}, {adicionais:[...]} ] } — uma entrada por unidade
+  function adicionarUnidade(id, adicionais) {
+    if (!carrinho[id]) carrinho[id] = [];
+    carrinho[id].push({ adicionais });
     atualizarCarrinho();
     renderLista();
   }
 
-  window._chQty = (id, d) => {
-    if (!carrinho[id]) return;
-    carrinho[id].quantidade = (carrinho[id].quantidade || 0) + d;
-    if (carrinho[id].quantidade <= 0) delete carrinho[id];
+  window._removerUltima = id => {
+    if (!carrinho[id] || !carrinho[id].length) return;
+    carrinho[id].pop();
+    if (!carrinho[id].length) delete carrinho[id];
     atualizarCarrinho();
     renderLista();
   };
@@ -659,35 +662,37 @@
       const b = buscaAtiva.toLowerCase();
       lista = lista.filter(i => i.nome.toLowerCase().includes(b) || (i.descricao||'').toLowerCase().includes(b));
     }
-
     if (!lista.length) {
       document.getElementById('lista-container').innerHTML = '<div class="vazio">Nenhum item encontrado.</div>';
       return;
     }
-
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
     document.getElementById('lista-container').innerHTML =
       '<div class="items">' +
       lista.map(item => {
-        const entry = carrinho[item.id];
-        const qty = entry ? entry.quantidade : 0;
-        const addNomes = entry?.adicionais?.length
-          ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">+ ${entry.adicionais.map(a=>a.nome).join(', ')}</div>`
-          : '';
+        const unidades = carrinho[item.id] || [];
+        const qty = unidades.length;
         const badgeHtml = item.badge === 'hot' ? '<span class="badge badge-hot">quente</span>'
           : item.badge === 'new' ? '<span class="badge badge-new">novo</span>'
           : item.badge === 'dest' ? '<span class="badge badge-dest">destaque</span>' : '';
+        const resumoUnidades = qty > 0
+          ? unidades.map((u, i) => {
+              const adds = (u.adicionais||[]).map(a=>a.nome).join(', ');
+              return `<div style="font-size:10px;color:var(--muted);margin-top:1px">
+                Unid. ${i+1}${adds ? ` · <span style="color:#d97706">${adds}</span>` : ''}
+              </div>`;
+            }).join('')
+          : '';
         const ctrl = qty > 0
           ? `<div class="qty-ctrl">
-               <button class="qty-btn" onclick="window._chQty('${item.id}',-1)">−</button>
+               <button class="qty-btn" onclick="window._removerUltima('${item.id}')">−</button>
                <span class="qty-num">${qty}</span>
-               <button class="qty-btn" onclick="window._chQty('${item.id}',1)">+</button>
+               <button class="qty-btn" onclick="window._addMaisUm('${item.id}')">+</button>
              </div>`
           : `<button class="add-btn" onclick="window._addItem('${item.id}')">+</button>`;
         const imgHtml = item.foto
           ? `<img src="${item.foto}" alt="${item.nome}" loading="lazy"/>`
           : `<span class="emoji-fallback">${item.emoji || '🍔'}</span>`;
-        // Tags dos itens do combo
         const comboTags = item.comboItens?.length
           ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${item.comboItens.map(c=>`<span style="font-size:10px;background:#f0f4ff;color:#0d2654;border-radius:8px;padding:1px 7px;font-weight:600;border:1px solid #c7d4f0">${c.nome}</span>`).join('')}</div>`
           : '';
@@ -699,7 +704,7 @@
                 <div class="item-nome">${item.nome}${badgeHtml}</div>
                 <div class="item-desc">${item.descricao || ''}</div>
                 ${comboTags}
-                ${addNomes}
+                ${resumoUnidades}
               </div>
               <div class="item-footer">
                 <span class="item-preco">${fmt(item.preco)}</span>
@@ -711,16 +716,18 @@
   }
 
   function totalCarrinho() {
-    return Object.entries(carrinho).reduce((a, [id, entry]) => {
+    return Object.entries(carrinho).reduce((total, [id, unidades]) => {
       const it = cardapioData.find(x => x.id === id);
-      if (!it) return a;
-      const extraPreco = (entry.adicionais||[]).reduce((s, x) => s + x.preco, 0);
-      return a + (it.preco + extraPreco) * entry.quantidade;
+      if (!it) return total;
+      return total + unidades.reduce((s, u) => {
+        const extra = (u.adicionais||[]).reduce((a, x) => a + x.preco, 0);
+        return s + it.preco + extra;
+      }, 0);
     }, 0);
   }
 
   function atualizarCarrinho() {
-    const count = Object.values(carrinho).reduce((a, e) => a + e.quantidade, 0);
+    const count = Object.values(carrinho).reduce((a, u) => a + u.length, 0);
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
     document.getElementById('cart-qtd').textContent = count;
     document.getElementById('cart-valor').textContent = fmt(totalCarrinho());
@@ -732,18 +739,20 @@
 
   window.abrirCheckout = () => {
     const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
-    const itensHtml = Object.entries(carrinho).map(([id, entry]) => {
+    const itensHtml = Object.entries(carrinho).flatMap(([id, unidades]) => {
       const it = cardapioData.find(x => x.id === id);
-      if (!it) return '';
-      const extraPreco = (entry.adicionais||[]).reduce((a,x) => a+x.preco, 0);
-      const subtotal = (it.preco + extraPreco) * entry.quantidade;
-      const addsHtml = entry.adicionais?.length
-        ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">+ ${entry.adicionais.map(a=>a.nome).join(', ')}</div>`
-        : '';
-      return `<div class="chk-row">
-        <div><span class="chk-row-nome">${entry.quantidade}x ${it.nome}</span>${addsHtml}</div>
-        <span class="chk-row-preco">${fmt(subtotal)}</span>
-      </div>`;
+      if (!it) return [];
+      return unidades.map((u, i) => {
+        const extra = (u.adicionais||[]).reduce((a,x) => a+x.preco, 0);
+        const adds = (u.adicionais||[]).map(a=>a.nome).join(', ');
+        return `<div class="chk-row">
+          <div>
+            <span class="chk-row-nome">${it.nome}</span>
+            ${adds ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">+ ${adds}</div>` : ''}
+          </div>
+          <span class="chk-row-preco">${fmt(it.preco + extra)}</span>
+        </div>`;
+      });
     }).join('') +
     `<div class="total-row"><span class="total-label">Total</span><span class="total-valor">${fmt(totalCarrinho())}</span></div>`;
     document.getElementById('chk-itens').innerHTML = itensHtml;
@@ -761,14 +770,12 @@
     btn.textContent = 'ENVIANDO...';
     btn.disabled = true;
     try {
-      const itensPedido = Object.entries(carrinho).map(([id, entry]) => {
+      const itensPedido = Object.entries(carrinho).flatMap(([id, unidades]) => {
         const it = cardapioData.find(x => x.id === id);
-        const extraPreco = (entry.adicionais||[]).reduce((a,x) => a+x.preco, 0);
-        return {
-          id, nome: it.nome, quantidade: entry.quantidade,
-          preco: it.preco, adicionais: entry.adicionais || [],
-          subtotal: (it.preco + extraPreco) * entry.quantidade
-        };
+        return unidades.map(u => {
+          const extra = (u.adicionais||[]).reduce((a,x) => a+x.preco, 0);
+          return { id, nome: it.nome, quantidade: 1, preco: it.preco, adicionais: u.adicionais||[], subtotal: it.preco + extra };
+        });
       });
       const total = itensPedido.reduce((a, i) => a + i.subtotal, 0);
       const pontosGanhos = Math.floor(total);
