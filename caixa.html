@@ -389,6 +389,7 @@
               </div>
             </div>
             <div class="pedido-itens">${itensStr||'—'}</div>
+            ${p.rodadas > 1 ? `<div style="padding:4px 16px;font-size:11px;color:#7c3aed;font-weight:600">🔄 ${p.rodadas} rodadas nesta conta</div>` : ''}
             ${addStr.length ? `<div class="pedido-adds">+ ${addStr.join(', ')}</div>` : ''}
             ${p.observacoes ? `<div class="pedido-obs">Obs: ${p.observacoes}</div>` : ''}
             <div style="padding:10px 16px">

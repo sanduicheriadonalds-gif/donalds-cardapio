@@ -333,6 +333,7 @@
     </div>
     <div class="sucesso-titulo">PEDIDO CONFIRMADO!</div>
     <div class="sucesso-num" id="sucesso-num">#000</div>
+    <div id="sucesso-rodada" style="display:none;font-size:13px;color:var(--success);font-weight:600;background:#f0fdf4;border-radius:10px;padding:8px 16px;width:100%;text-align:center"></div>
     <div class="sucesso-sub">Seu pedido foi enviado para a cozinha. Avisamos quando estiver pronto!</div>
     <!-- Card de pontos ganhos -->
     <div id="sucesso-pontos" style="display:none;background:var(--azul);border-radius:14px;padding:16px 24px;width:100%;text-align:center">
@@ -351,7 +352,7 @@
 <!-- FIREBASE SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, getDoc, setDoc, serverTimestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAoZdHN5ZEvZ-HXaUh9kqPifsShnMZclM8",
@@ -770,43 +771,84 @@
     btn.textContent = 'ENVIANDO...';
     btn.disabled = true;
     try {
-      const itensPedido = Object.entries(carrinho).flatMap(([id, unidades]) => {
+      const novosItens = Object.entries(carrinho).flatMap(([id, unidades]) => {
         const it = cardapioData.find(x => x.id === id);
         return unidades.map(u => {
           const extra = (u.adicionais||[]).reduce((a,x) => a+x.preco, 0);
           return { id, nome: it.nome, quantidade: 1, preco: it.preco, adicionais: u.adicionais||[], subtotal: it.preco + extra };
         });
       });
-      const total = itensPedido.reduce((a, i) => a + i.subtotal, 0);
-      const pontosGanhos = Math.floor(total);
-      const ref = await addDoc(collection(db, 'pedidos'), {
-        mesa, itens: itensPedido, total,
-        observacoes: document.getElementById('obs-input').value,
-        pagamento: null, status: 'novo',
-        clienteId: clienteAtual?.id || null,
-        clienteNome: clienteAtual?.nome || null,
-        pontosGanhos: clienteAtual ? pontosGanhos : 0,
-        criadoEm: serverTimestamp()
-      });
+      const totalNovos = novosItens.reduce((a, i) => a + i.subtotal, 0);
+      const obs = document.getElementById('obs-input').value;
+
+      // Busca conta aberta da mesa
+      const snapPedidos = await getDocs(collection(db,'pedidos'));
+      const contaAberta = snapPedidos.docs
+        .map(d => ({id:d.id,...d.data()}))
+        .find(p => p.mesa === mesa && !p.pago && !p.arquivado && p.contaMesa);
+
+      let contaId, contaNum;
+
+      if (contaAberta) {
+        // Adiciona itens na conta existente
+        const itensAtualizados = [...(contaAberta.itens||[]), ...novosItens];
+        const totalAtualizado = itensAtualizados.reduce((a,i) => a + i.subtotal, 0);
+        const rodadas = (contaAberta.rodadas||0) + 1;
+        await updateDoc(doc(db,'pedidos',contaAberta.id), {
+          itens: itensAtualizados,
+          total: totalAtualizado,
+          status: 'novo', // volta para novo para a cozinha ver
+          rodadas,
+          ultimaRodadaEm: serverTimestamp(),
+          ...(obs ? {observacoes: obs} : {}),
+        });
+        contaId = contaAberta.id;
+        contaNum = contaAberta.id.slice(-4).toUpperCase();
+      } else {
+        // Cria nova conta para a mesa
+        const ref = await addDoc(collection(db,'pedidos'), {
+          mesa, itens: novosItens, total: totalNovos,
+          observacoes: obs,
+          pagamento: null, status: 'novo',
+          contaMesa: true, // flag que identifica conta de mesa
+          rodadas: 1,
+          clienteId: clienteAtual?.id || null,
+          clienteNome: clienteAtual?.nome || null,
+          criadoEm: serverTimestamp(),
+          ultimaRodadaEm: serverTimestamp(),
+        });
+        contaId = ref.id;
+        contaNum = ref.id.slice(-4).toUpperCase();
+      }
+
       // Acumula pontos no cliente
       if (clienteAtual) {
+        const pontosGanhos = Math.floor(totalNovos);
         const novos = (clienteAtual.pontos||0) + pontosGanhos;
         await updateDoc(doc(db,'clientes',clienteAtual.id), {
           pontos: novos,
-          totalGasto: (clienteAtual.totalGasto||0) + total,
+          totalGasto: (clienteAtual.totalGasto||0) + totalNovos,
           totalPedidos: (clienteAtual.totalPedidos||0) + 1,
           ultimaVisita: serverTimestamp(),
         });
         clienteAtual.pontos = novos;
         document.getElementById('pontos-total-txt').textContent = novos;
-        // Mostra pontos ganhos na tela de sucesso
         document.getElementById('sucesso-pontos').style.display = 'block';
         document.getElementById('sucesso-pontos-val').textContent = `+${pontosGanhos} pontos`;
         document.getElementById('sucesso-pontos-total').textContent = `Total: ${novos} pontos`;
       } else {
         document.getElementById('sucesso-pontos').style.display = 'none';
       }
-      document.getElementById('sucesso-num').textContent = '#' + ref.id.slice(-4).toUpperCase();
+
+      document.getElementById('sucesso-num').textContent = '#' + contaNum;
+      // Mostra se é uma rodada adicional
+      const rodadaInfo = document.getElementById('sucesso-rodada');
+      if (rodadaInfo) {
+        rodadaInfo.style.display = contaAberta ? 'block' : 'none';
+        rodadaInfo.textContent = contaAberta
+          ? `✅ Adicionado à sua conta da Mesa ${mesa}`
+          : `✅ Conta da Mesa ${mesa} aberta`;
+      }
       document.getElementById('tela-checkout').style.display = 'none';
       document.getElementById('tela-sucesso').style.display = 'block';
     } catch(e) {

@@ -2131,6 +2131,7 @@
               </div>
             </div>
             <div style="padding:12px 16px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border)">${itensStr}</div>
+            ${p.rodadas > 1 ? `<div style="padding:4px 16px;font-size:11px;color:#7c3aed;font-weight:600">🔄 ${p.rodadas} rodadas nesta conta</div>` : ''}
             ${addStr.length?`<div style="padding:6px 16px;font-size:11px;color:#d97706">+ ${addStr.join(', ')}</div>`:''}
             ${p.observacoes?`<div style="padding:6px 16px;font-size:11px;color:#854d0e;background:#fffbeb">Obs: ${p.observacoes}</div>`:''}
             <div style="padding:10px 16px">
