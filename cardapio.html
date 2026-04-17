@@ -399,13 +399,15 @@
       return;
     }
     try {
-      // Busca cliente pelo celular
+      // Busca cliente pelo celular — dados sempre frescos do Firebase
       const snap = await getDocs(collection(db,'clientes'));
       const existente = snap.docs.find(d => d.data().celular === celular);
       if (existente) {
-        // Atualiza dados se necessário
-        clienteAtual = {id: existente.id, ...existente.data()};
-        if (nome && nome !== clienteAtual.nome) {
+        // Carrega TODOS os dados do Firebase incluindo pontos atuais
+        const dadosCliente = existente.data();
+        clienteAtual = {id: existente.id, ...dadosCliente};
+        // Atualiza nome se mudou
+        if (nome && nome !== dadosCliente.nome) {
           await updateDoc(doc(db,'clientes',existente.id), {nome});
           clienteAtual.nome = nome;
         }
@@ -419,10 +421,11 @@
         clienteAtual = {id: ref.id, nome, celular, cpf: cpf||null, pontos: 0, totalGasto: 0, totalPedidos: 0};
       }
       // Salva no localStorage para reconhecer nas próximas visitas
-      localStorage.setItem('donalds_cliente', JSON.stringify({celular, nome}));
+      localStorage.setItem('donalds_cliente', JSON.stringify({celular, nome: clienteAtual.nome}));
       mostrarPontosHeader();
       entrarCardapio();
     } catch(e) {
+      console.error('Erro ao identificar:', e);
       alert('Erro ao identificar. Tente novamente.');
     }
   };
@@ -435,9 +438,10 @@
 
   function mostrarPontosHeader() {
     if (!clienteAtual) return;
+    const pontos = parseInt(clienteAtual.pontos) || 0;
     document.getElementById('pontos-bar').style.display = 'flex';
     document.getElementById('pontos-nome-txt').textContent = `Olá, ${clienteAtual.nome.split(' ')[0]}!`;
-    document.getElementById('pontos-total-txt').textContent = clienteAtual.pontos || 0;
+    document.getElementById('pontos-total-txt').textContent = pontos;
   }
 
   window.abrirPontos = async () => {
