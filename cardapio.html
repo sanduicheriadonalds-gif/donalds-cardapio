@@ -195,7 +195,7 @@
           Sem cadastro você ainda pode fazer seu pedido, mas não acumula pontos.
         </div>
       </div>
-      <input class="id-input" type="text" id="id-nome" placeholder="Seu nome" autocomplete="name"/>
+      <input class="id-input" type="text" id="id-nome" placeholder="Seu nome" autocomplete="off" autocorrect="off" spellcheck="false"/>
       <input class="id-input" type="tel" id="id-celular" placeholder="Celular (ex: 62 99999-9999)" autocomplete="tel" oninput="formatarCelular(this)"/>
       <input class="id-input" type="text" id="id-cpf" placeholder="CPF (opcional)" autocomplete="off" oninput="formatarCPF(this)"/>
       <button class="id-btn" onclick="identificarCliente()">ENTRAR E ACUMULAR PONTOS</button>
@@ -391,7 +391,7 @@
   };
 
   window.identificarCliente = async () => {
-    const nome = document.getElementById('id-nome').value.trim();
+    const nome = document.getElementById('id-nome').value.trim().replace(/\s+/g, ' ');
     const celular = document.getElementById('id-celular').value.replace(/\D/g,'');
     const cpf = document.getElementById('id-cpf').value.replace(/\D/g,'');
     if (!nome || celular.length < 10) {

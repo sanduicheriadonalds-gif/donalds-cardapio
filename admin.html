@@ -1819,9 +1819,10 @@
           <td>${fmt(c.totalGasto||0)}</td>
           <td><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--azul)">${c.pontos||0}</span></td>
           <td style="font-size:12px;color:var(--muted)">${fmtDt(c.ultimaVisita||c.criadoEm)}</td>
-          <td>
+          <td><div style="display:flex;gap:6px">
             <button class="btn-sec" data-ajustar-pts="${c.id}" data-pts-atual="${c.pontos||0}" data-pts-nome="${c.nome}">Ajustar pts</button>
-          </td>
+            <button class="btn-sec" data-editar-cliente="${c.id}" data-nome-atual="${c.nome}" style="font-size:11px;padding:5px 10px">✏️ Nome</button>
+          </div></td>
         </tr>`).join('')
       : '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">Nenhum cliente cadastrado ainda.</td></tr>';
   }
@@ -1836,7 +1837,16 @@
 
   // Listener para ajustar pontos
   document.addEventListener('click', e => {
-    const ajustarBtn = e.target.closest('[data-ajustar-pts]');
+    const editarCliente = e.target.closest('[data-editar-cliente]');
+    if (editarCliente) {
+      const id = editarCliente.dataset.editarCliente;
+      const nomeAtual = editarCliente.dataset.nomeAtual;
+      const novoNome = prompt(`Corrigir nome do cliente:\n\nNome atual: "${nomeAtual}"\n\nDigite o nome correto:`, nomeAtual);
+      if (novoNome && novoNome.trim() && novoNome.trim() !== nomeAtual) {
+        updateDoc(doc(db,'clientes',id), {nome: novoNome.trim().replace(/\s+/g,' ')})
+          .then(() => carregarClientes());
+      }
+    }
     if (ajustarBtn) {
       const id = ajustarBtn.dataset.ajustarPts;
       const atual = parseInt(ajustarBtn.dataset.ptsAtual) || 0;
