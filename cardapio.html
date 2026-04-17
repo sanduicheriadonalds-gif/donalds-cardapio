@@ -486,16 +486,19 @@
     const salvo = localStorage.getItem('donalds_cliente');
     if (salvo) {
       try {
-        const {celular, nome} = JSON.parse(salvo);
+        const {celular} = JSON.parse(salvo);
         const snap = await getDocs(collection(db,'clientes'));
         const existente = snap.docs.find(d => d.data().celular === celular);
         if (existente) {
+          // Sempre busca dados frescos do Firebase (pontos atualizados)
           clienteAtual = {id: existente.id, ...existente.data()};
           mostrarPontosHeader();
           entrarCardapio();
           return;
         }
-      } catch(e) {}
+        // Celular no localStorage mas não existe no Firebase — mostra identificação
+        localStorage.removeItem('donalds_cliente');
+      } catch(e) { console.error('Erro ao verificar cliente:', e); }
     }
     // Sem cliente salvo — mostra tela de identificação
     document.getElementById('tela-cardapio').style.display = 'none';
@@ -781,13 +784,13 @@
       const totalNovos = novosItens.reduce((a, i) => a + i.subtotal, 0);
       const obs = document.getElementById('obs-input').value;
 
-      // Busca conta aberta da mesa
+      // Busca conta aberta da mesa (não paga, não arquivada, é conta de mesa)
       const snapPedidos = await getDocs(collection(db,'pedidos'));
       const contaAberta = snapPedidos.docs
         .map(d => ({id:d.id,...d.data()}))
-        .find(p => p.mesa === mesa && !p.pago && !p.arquivado && p.contaMesa);
+        .find(p => p.mesa === mesa && !p.pago && !p.arquivado && p.contaMesa === true);
 
-      let contaId, contaNum;
+      let contaNum;
 
       if (contaAberta) {
         // Adiciona itens na conta existente
@@ -797,12 +800,11 @@
         await updateDoc(doc(db,'pedidos',contaAberta.id), {
           itens: itensAtualizados,
           total: totalAtualizado,
-          status: 'novo', // volta para novo para a cozinha ver
+          status: 'novo',
           rodadas,
           ultimaRodadaEm: serverTimestamp(),
           ...(obs ? {observacoes: obs} : {}),
         });
-        contaId = contaAberta.id;
         contaNum = contaAberta.id.slice(-4).toUpperCase();
       } else {
         // Cria nova conta para a mesa
@@ -810,32 +812,37 @@
           mesa, itens: novosItens, total: totalNovos,
           observacoes: obs,
           pagamento: null, status: 'novo',
-          contaMesa: true, // flag que identifica conta de mesa
+          contaMesa: true,
           rodadas: 1,
           clienteId: clienteAtual?.id || null,
           clienteNome: clienteAtual?.nome || null,
           criadoEm: serverTimestamp(),
           ultimaRodadaEm: serverTimestamp(),
         });
-        contaId = ref.id;
         contaNum = ref.id.slice(-4).toUpperCase();
       }
 
-      // Acumula pontos no cliente
-      if (clienteAtual) {
+      // Acumula pontos no cliente — só se tiver id válido
+      if (clienteAtual && clienteAtual.id) {
         const pontosGanhos = Math.floor(totalNovos);
-        const novos = (clienteAtual.pontos||0) + pontosGanhos;
-        await updateDoc(doc(db,'clientes',clienteAtual.id), {
-          pontos: novos,
-          totalGasto: (clienteAtual.totalGasto||0) + totalNovos,
-          totalPedidos: (clienteAtual.totalPedidos||0) + 1,
-          ultimaVisita: serverTimestamp(),
-        });
-        clienteAtual.pontos = novos;
-        document.getElementById('pontos-total-txt').textContent = novos;
-        document.getElementById('sucesso-pontos').style.display = 'block';
-        document.getElementById('sucesso-pontos-val').textContent = `+${pontosGanhos} pontos`;
-        document.getElementById('sucesso-pontos-total').textContent = `Total: ${novos} pontos`;
+        const pontosAtuais = clienteAtual.pontos || 0;
+        const novos = pontosAtuais + pontosGanhos;
+        try {
+          await updateDoc(doc(db,'clientes',clienteAtual.id), {
+            pontos: novos,
+            totalGasto: (clienteAtual.totalGasto||0) + totalNovos,
+            totalPedidos: (clienteAtual.totalPedidos||0) + 1,
+            ultimaVisita: serverTimestamp(),
+          });
+          clienteAtual.pontos = novos;
+          clienteAtual.totalGasto = (clienteAtual.totalGasto||0) + totalNovos;
+          document.getElementById('pontos-total-txt').textContent = novos;
+          document.getElementById('sucesso-pontos').style.display = 'block';
+          document.getElementById('sucesso-pontos-val').textContent = `+${pontosGanhos} pontos`;
+          document.getElementById('sucesso-pontos-total').textContent = `Total: ${novos} pontos`;
+        } catch(pontosErr) {
+          console.error('Erro ao salvar pontos:', pontosErr);
+        }
       } else {
         document.getElementById('sucesso-pontos').style.display = 'none';
       }
