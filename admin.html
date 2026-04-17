@@ -574,6 +574,70 @@
   </div>
 </div>
 
+<!-- MODAL PERFIL CLIENTE -->
+<div class="modal-overlay hidden" id="modal-perfil-cliente">
+  <div class="modal" style="max-width:600px">
+    <!-- Header do perfil -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--azul);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--ouro)" id="perfil-inicial"></div>
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--azul);letter-spacing:1px" id="perfil-nome"></div>
+          <div style="font-size:12px;color:var(--muted)" id="perfil-contato"></div>
+        </div>
+      </div>
+      <button onclick="fecharModal('modal-perfil-cliente')" style="background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer">×</button>
+    </div>
+
+    <!-- Cards de métricas -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
+      <div style="background:#f8f8f4;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Pedidos</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--azul)" id="perfil-pedidos">0</div>
+      </div>
+      <div style="background:#f8f8f4;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Total gasto</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--azul)" id="perfil-gasto">R$ 0</div>
+      </div>
+      <div style="background:#fffbeb;border-radius:10px;padding:12px;text-align:center;border:1px solid #fcd34d">
+        <div style="font-size:10px;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Pontos</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#d97706" id="perfil-pontos">0</div>
+      </div>
+      <div style="background:#f8f8f4;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Última visita</div>
+        <div style="font-size:12px;font-weight:600;color:var(--azul);margin-top:4px" id="perfil-ultima"></div>
+      </div>
+    </div>
+
+    <!-- Itens mais pedidos -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">⭐ Itens mais pedidos</div>
+      <div id="perfil-top-itens" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- Dias/horários preferidos -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">📅 Frequência</div>
+        <div id="perfil-frequencia" style="font-size:13px;color:var(--muted)"></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">💡 Sugestão de promoção</div>
+        <div id="perfil-sugestao" style="font-size:12px;color:var(--muted);line-height:1.5"></div>
+      </div>
+    </div>
+
+    <!-- Histórico de visitas -->
+    <div style="font-size:12px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">🕐 Últimas visitas</div>
+    <div style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:10px" id="perfil-historico"></div>
+
+    <div class="modal-footer" style="margin-top:16px">
+      <button class="btn-sec" onclick="fecharModal('modal-perfil-cliente')">Fechar</button>
+      <button class="btn-sec" id="perfil-btn-wpp" style="border-color:#25d366;color:#25d366">📲 Mensagem WhatsApp</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL FUNCIONÁRIO -->
 <div class="modal-overlay hidden" id="modal-funcionario">
   <div class="modal">
@@ -1812,7 +1876,11 @@
     const fmtDt = ts => ts ? ts.toDate().toLocaleDateString('pt-BR') : '—';
     document.getElementById('tabela-clientes').innerHTML = lista.length
       ? lista.map(c => `<tr>
-          <td><strong>${c.nome||'—'}</strong></td>
+          <td>
+            <button data-perfil-cliente="${c.id}" style="background:none;border:none;cursor:pointer;font-weight:700;color:var(--azul);font-size:13px;text-align:left;padding:0;text-decoration:underline dotted;text-underline-offset:3px">
+              ${c.nome||'—'}
+            </button>
+          </td>
           <td>${c.celular||'—'}</td>
           <td style="font-size:12px;color:var(--muted)">${c.cpf||'—'}</td>
           <td>${c.totalPedidos||0}</td>
@@ -1827,6 +1895,121 @@
       : '<tr><td colspan="8" style="text-align:center;padding:20px;color:#aaa">Nenhum cliente cadastrado ainda.</td></tr>';
   }
 
+  async function abrirPerfilCliente(clienteId) {
+    const cliente = clientesCache.find(c => c.id === clienteId);
+    if (!cliente) return;
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.',',');
+    const fmtDt = ts => ts ? ts.toDate().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+    const fmtHora = ts => ts ? ts.toDate().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+
+    // Header
+    document.getElementById('perfil-inicial').textContent = (cliente.nome||'?')[0].toUpperCase();
+    document.getElementById('perfil-nome').textContent = cliente.nome || '—';
+    document.getElementById('perfil-contato').textContent = `📱 ${cliente.celular||'—'}${cliente.cpf ? ' · CPF: '+cliente.cpf : ''}`;
+    document.getElementById('perfil-pedidos').textContent = cliente.totalPedidos || 0;
+    document.getElementById('perfil-gasto').textContent = fmt(cliente.totalGasto||0);
+    document.getElementById('perfil-pontos').textContent = cliente.pontos || 0;
+    document.getElementById('perfil-ultima').textContent = fmtDt(cliente.ultimaVisita||cliente.criadoEm);
+
+    // Busca pedidos do cliente
+    const snapP = await getDocs(collection(db,'pedidos'));
+    const pedidos = snapP.docs.map(d=>({id:d.id,...d.data()}))
+      .filter(p => p.clienteId === clienteId)
+      .sort((a,b) => (b.criadoEm?.seconds||0) - (a.criadoEm?.seconds||0));
+
+    // Contagem de itens
+    const contagemItens = {};
+    pedidos.forEach(p => {
+      (p.itens||[]).forEach(i => {
+        const key = i.nome;
+        contagemItens[key] = (contagemItens[key]||0) + (i.quantidade||1);
+      });
+    });
+    const topItens = Object.entries(contagemItens)
+      .sort((a,b) => b[1]-a[1]).slice(0,5);
+    const maxQtd = topItens[0]?.[1] || 1;
+
+    document.getElementById('perfil-top-itens').innerHTML = topItens.length
+      ? topItens.map(([nome, qtd], i) => {
+          const pct = Math.round((qtd/maxQtd)*100);
+          const medalha = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+          return `<div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:14px;width:20px">${medalha}</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
+                <span style="font-weight:600">${nome}</span>
+                <span style="color:var(--muted)">${qtd}x</span>
+              </div>
+              <div style="background:#f0f0f0;border-radius:4px;height:6px">
+                <div style="background:var(--azul);border-radius:4px;height:100%;width:${pct}%"></div>
+              </div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="color:var(--muted);font-size:13px">Nenhum pedido ainda.</div>';
+
+    // Frequência
+    const diasSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const contDias = {};
+    pedidos.forEach(p => {
+      if (p.criadoEm) {
+        const dia = diasSemana[p.criadoEm.toDate().getDay()];
+        contDias[dia] = (contDias[dia]||0) + 1;
+      }
+    });
+    const diaMaisFreq = Object.entries(contDias).sort((a,b)=>b[1]-a[1])[0];
+    const diasDesdeUltima = cliente.ultimaVisita
+      ? Math.floor((Date.now() - cliente.ultimaVisita.toDate().getTime()) / 86400000)
+      : null;
+    document.getElementById('perfil-frequencia').innerHTML =
+      `<div style="margin-bottom:4px">Dia favorito: <strong>${diaMaisFreq?diaMaisFreq[0]:'—'}</strong></div>` +
+      `<div style="margin-bottom:4px">Total de visitas: <strong>${pedidos.length}</strong></div>` +
+      (diasDesdeUltima !== null
+        ? `<div style="color:${diasDesdeUltima>30?'#dc2626':diasDesdeUltima>14?'#d97706':'#16a34a'};font-weight:600">
+            ${diasDesdeUltima===0?'Visitou hoje':diasDesdeUltima===1?'Visitou ontem':`Há ${diasDesdeUltima} dias`}
+           </div>`
+        : '');
+
+    // Sugestão de promoção
+    let sugestao = '';
+    if (diasDesdeUltima > 30) {
+      sugestao = `😴 Cliente sumido há ${diasDesdeUltima} dias. Envie uma promoção para reativar!`;
+    } else if (topItens[0]) {
+      sugestao = `🎯 Adora ${topItens[0][0]}. Ofereça desconto nesse item ou um combo personalizado.`;
+    } else if ((cliente.pontos||0) > 100) {
+      sugestao = `⭐ Tem ${cliente.pontos} pontos acumulados. Que tal criar um resgate especial?`;
+    } else {
+      sugestao = `✅ Cliente ativo e engajado. Continue fidelizando!`;
+    }
+    document.getElementById('perfil-sugestao').textContent = sugestao;
+
+    // Histórico
+    document.getElementById('perfil-historico').innerHTML = pedidos.slice(0,8).map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12px">
+        <div>
+          <span style="font-weight:600">#${p.id.slice(-4).toUpperCase()}</span>
+          <span style="color:var(--muted);margin-left:8px">${fmtDt(p.criadoEm)} ${fmtHora(p.criadoEm)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="color:var(--muted)">${(p.itens||[]).length} item(s)</span>
+          <span style="font-weight:700;color:var(--azul)">${fmt(p.total||0)}</span>
+          <span style="font-size:11px;background:${p.pago?'#dcfce7':'#fef9c3'};color:${p.pago?'#15803d':'#854d0e'};padding:2px 8px;border-radius:8px;font-weight:600">
+            ${p.pago?'Pago':'Em aberto'}
+          </span>
+        </div>
+      </div>`).join('') ||
+      '<div style="padding:16px;text-align:center;color:var(--muted)">Nenhum pedido encontrado.</div>';
+
+    // Botão WhatsApp
+    const celLimpo = (cliente.celular||'').replace(/\D/g,'');
+    const nomeFirst = (cliente.nome||'').split(' ')[0];
+    const msgWpp = `Olá ${nomeFirst}! 😊 Aqui é o Donalds' Sanduicheria. Sentimos sua falta! Que tal passar por aqui? Temos novidades esperando por você! 🍔`;
+    document.getElementById('perfil-btn-wpp').onclick = () =>
+      window.open(`https://wa.me/55${celLimpo}?text=${encodeURIComponent(msgWpp)}`, '_blank');
+
+    document.getElementById('modal-perfil-cliente').classList.remove('hidden');
+  }
+
   window.filtrarClientes = busca => {
     const b = busca.toLowerCase();
     const filtrados = clientesCache.filter(c =>
@@ -1837,7 +2020,9 @@
 
   // Listener para ajustar pontos
   document.addEventListener('click', e => {
-    const editarCliente = e.target.closest('[data-editar-cliente]');
+    // Abrir perfil do cliente ao clicar no nome
+    const perfilBtn = e.target.closest('[data-perfil-cliente]');
+    if (perfilBtn) abrirPerfilCliente(perfilBtn.dataset.perfilCliente);
     if (editarCliente) {
       const id = editarCliente.dataset.editarCliente;
       const nomeAtual = editarCliente.dataset.nomeAtual;
