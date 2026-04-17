@@ -2050,14 +2050,12 @@
 
   window.finalizarPagamento = async () => {
     if (!pedidoCaixaAtual) return;
-    // Coleta formas selecionadas
     const formas = PGTOS.filter(p => document.getElementById('chk-'+p)?.checked);
     if (!formas.length) { alert('Selecione ao menos uma forma de pagamento.'); return; }
     const pagamentos = formas.map(p => ({
       forma: p,
       valor: parseFloat(document.getElementById('val-'+p)?.value) || 0
     }));
-    // Forma principal (para compatibilidade com histórico)
     const pagamentoPrincipal = formas.length === 1 ? formas[0] : 'Misto';
     const btn = document.getElementById('btn-finalizar-pgto');
     btn.textContent = 'Salvando...'; btn.disabled = true;
@@ -2071,6 +2069,28 @@
         obsFinanceiro: document.getElementById('cx-obs').value || null,
         status: 'entregue',
       });
+
+      // Acumula pontos do cliente ao finalizar pagamento (R$ 1 = 1 ponto)
+      const clienteId = pedidoCaixaAtual.clienteId;
+      if (clienteId) {
+        try {
+          const snapC = await getDocs(collection(db,'clientes'));
+          const clienteDoc = snapC.docs.find(d => d.id === clienteId);
+          if (clienteDoc) {
+            const total = pedidoCaixaAtual.total || 0;
+            const pontosGanhos = Math.floor(total);
+            const dadosCliente = clienteDoc.data();
+            const novos = (dadosCliente.pontos || 0) + pontosGanhos;
+            await updateDoc(doc(db,'clientes',clienteId), {
+              pontos: novos,
+              totalGasto: (dadosCliente.totalGasto||0) + total,
+              totalPedidos: (dadosCliente.totalPedidos||0) + 1,
+              ultimaVisita: serverTimestamp(),
+            });
+          }
+        } catch(pontosErr) { console.error('Erro ao salvar pontos:', pontosErr); }
+      }
+
       fecharModal('modal-caixa');
       carregarCaixa();
       carregarDashboard();

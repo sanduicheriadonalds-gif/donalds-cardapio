@@ -826,30 +826,8 @@
         contaNum = ref.id.slice(-4).toUpperCase();
       }
 
-      // Acumula pontos no cliente — só se tiver id válido
-      if (clienteAtual && clienteAtual.id) {
-        const pontosGanhos = Math.floor(totalNovos);
-        const pontosAtuais = clienteAtual.pontos || 0;
-        const novos = pontosAtuais + pontosGanhos;
-        try {
-          await updateDoc(doc(db,'clientes',clienteAtual.id), {
-            pontos: novos,
-            totalGasto: (clienteAtual.totalGasto||0) + totalNovos,
-            totalPedidos: (clienteAtual.totalPedidos||0) + 1,
-            ultimaVisita: serverTimestamp(),
-          });
-          clienteAtual.pontos = novos;
-          clienteAtual.totalGasto = (clienteAtual.totalGasto||0) + totalNovos;
-          document.getElementById('pontos-total-txt').textContent = novos;
-          document.getElementById('sucesso-pontos').style.display = 'block';
-          document.getElementById('sucesso-pontos-val').textContent = `+${pontosGanhos} pontos`;
-          document.getElementById('sucesso-pontos-total').textContent = `Total: ${novos} pontos`;
-        } catch(pontosErr) {
-          console.error('Erro ao salvar pontos:', pontosErr);
-        }
-      } else {
-        document.getElementById('sucesso-pontos').style.display = 'none';
-      }
+      // Pontos gerados quando caixa finalizar pagamento
+      document.getElementById('sucesso-pontos').style.display = 'none';
 
       document.getElementById('sucesso-num').textContent = '#' + contaNum;
       // Mostra se é uma rodada adicional

@@ -729,6 +729,28 @@
         obsFinanceiro: document.getElementById('mp-obs').value || null,
         status: 'entregue',
       });
+
+      // Acumula pontos do cliente ao finalizar pagamento
+      const clienteId = pedidoAtual.clienteId;
+      if (clienteId) {
+        try {
+          const snapC = await getDocs(collection(db,'clientes'));
+          const clienteDoc = snapC.docs.find(d => d.id === clienteId);
+          if (clienteDoc) {
+            const total = pedidoAtual.total || 0;
+            const pontosGanhos = Math.floor(total);
+            const dadosCliente = clienteDoc.data();
+            const novos = (dadosCliente.pontos || 0) + pontosGanhos;
+            await updateDoc(doc(db,'clientes',clienteId), {
+              pontos: novos,
+              totalGasto: (dadosCliente.totalGasto||0) + total,
+              totalPedidos: (dadosCliente.totalPedidos||0) + 1,
+              ultimaVisita: serverTimestamp(),
+            });
+          }
+        } catch(pontosErr) { console.error('Erro ao salvar pontos:', pontosErr); }
+      }
+
       document.getElementById('modal-pgto').classList.add('hidden');
       pedidoAtual = null;
       carregarCaixa();
