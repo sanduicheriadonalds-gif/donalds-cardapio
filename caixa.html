@@ -227,8 +227,9 @@
 
 <!-- MODAL PAGAMENTO -->
 <div class="modal-overlay hidden" id="modal-pgto">
-  <div class="modal">
+  <div class="modal" style="max-width:520px">
     <div class="modal-titulo">Finalizar pagamento</div>
+    <!-- Resumo -->
     <div style="background:#f8f8f4;border-radius:10px;padding:14px;margin-bottom:16px">
       <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Pedido <strong id="mp-num"></strong> · Mesa <strong id="mp-mesa"></strong></div>
       <div id="mp-itens" style="font-size:13px;color:var(--text);margin-bottom:8px"></div>
@@ -237,28 +238,86 @@
         <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--azul);letter-spacing:1px" id="mp-total"></span>
       </div>
     </div>
+
+    <!-- Divisão por pessoas -->
     <div class="campo">
-      <label>Forma de pagamento</label>
-      <div class="pgto-grid">
-        <button class="pgto-btn ativo" id="mp-pix" data-pgto="PIX">PIX</button>
-        <button class="pgto-btn" id="mp-cartao" data-pgto="Cartão">Cartão</button>
-        <button class="pgto-btn" id="mp-dinheiro" data-pgto="Dinheiro">Dinheiro</button>
-      </div>
-      <input type="hidden" id="mp-pgto-val" value="PIX"/>
-    </div>
-    <div id="troco-wrap" style="display:none">
-      <div class="campo-row">
-        <div class="campo">
-          <label>Valor recebido (R$)</label>
-          <input type="number" id="mp-recebido" step="0.01" min="0" placeholder="Ex: 50,00"/>
-        </div>
-        <div class="campo">
-          <label>Troco</label>
-          <input type="text" id="mp-troco" readonly style="background:#f0fdf4;color:#15803d;font-weight:700;font-size:15px"/>
+      <label>Dividir entre quantas pessoas?</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="mp-menos-pessoa" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--azul);font-weight:700">−</button>
+        <span id="mp-pessoas-num" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--azul);min-width:32px;text-align:center">1</span>
+        <button id="mp-mais-pessoa" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--azul);font-weight:700">+</button>
+        <div style="flex:1;background:#f0f4ff;border-radius:10px;padding:8px 14px;margin-left:6px">
+          <div style="font-size:11px;color:var(--muted)">Valor por pessoa</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--azul)" id="mp-por-pessoa">R$ 0,00</div>
         </div>
       </div>
     </div>
+
+    <!-- Formas de pagamento múltiplas -->
     <div class="campo">
+      <label>Formas de pagamento <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none">(pode selecionar mais de uma)</span></label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+
+        <div style="border:1px solid var(--border);border-radius:10px;padding:10px 14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="mp-chk-PIX" data-mp-pgto="PIX" style="width:18px;height:18px;cursor:pointer;accent-color:var(--azul)"/>
+            <label for="mp-chk-PIX" style="font-size:14px;font-weight:600;cursor:pointer">PIX</label>
+          </div>
+          <div id="mp-val-PIX-wrap" style="display:none;margin-top:8px;padding-left:28px">
+            <input type="number" id="mp-val-PIX" placeholder="Valor no PIX" step="0.01" min="0"
+              style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none"/>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:10px;padding:10px 14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="mp-chk-Cartão" data-mp-pgto="Cartão" style="width:18px;height:18px;cursor:pointer;accent-color:var(--azul)"/>
+            <label for="mp-chk-Cartão" style="font-size:14px;font-weight:600;cursor:pointer">Cartão</label>
+          </div>
+          <div id="mp-val-Cartão-wrap" style="display:none;margin-top:8px;padding-left:28px">
+            <input type="number" id="mp-val-Cartão" placeholder="Valor no Cartão" step="0.01" min="0"
+              style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none"/>
+          </div>
+        </div>
+
+        <div style="border:1px solid var(--border);border-radius:10px;padding:10px 14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="checkbox" id="mp-chk-Dinheiro" data-mp-pgto="Dinheiro" style="width:18px;height:18px;cursor:pointer;accent-color:var(--azul)"/>
+            <label for="mp-chk-Dinheiro" style="font-size:14px;font-weight:600;cursor:pointer">Dinheiro</label>
+          </div>
+          <div id="mp-val-Dinheiro-wrap" style="display:none;margin-top:8px;padding-left:28px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Valor recebido</div>
+                <input type="number" id="mp-val-Dinheiro" placeholder="Ex: 50,00" step="0.01" min="0"
+                  style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none"/>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Troco</div>
+                <input type="text" id="mp-troco-din" readonly
+                  style="width:100%;padding:9px 12px;border:1.5px solid #d1fae5;border-radius:10px;font-size:13px;background:#f0fdf4;color:#15803d;font-weight:700"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumo recebimento -->
+    <div id="mp-resumo" style="display:none;background:var(--azul);border-radius:10px;padding:12px 16px;margin-top:4px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.6);margin-bottom:4px">
+        <span>Total</span><span id="mp-res-total" style="color:#fff;font-weight:700"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.6);margin-bottom:4px">
+        <span>Recebido</span><span id="mp-res-recebido" style="color:#f5c518;font-weight:700"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;border-top:1px solid rgba(255,255,255,.15);padding-top:6px;margin-top:4px">
+        <span style="color:rgba(255,255,255,.7)">Falta / Troco</span>
+        <span id="mp-res-diff" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px"></span>
+      </div>
+    </div>
+
+    <div class="campo" style="margin-top:12px">
       <label>Observação (opcional)</label>
       <input type="text" id="mp-obs" placeholder="Ex: cortesia, desconto..."/>
     </div>
@@ -576,6 +635,63 @@
   }
 
   // ===== MODAL PAGAMENTO =====
+  const PGTOS_MP = ['PIX','Cartão','Dinheiro'];
+  let mpPessoas = 1;
+
+  function resetarModalPgto() {
+    mpPessoas = 1;
+    document.getElementById('mp-pessoas-num').textContent = '1';
+    PGTOS_MP.forEach(p => {
+      document.getElementById('mp-chk-'+p).checked = false;
+      document.getElementById('mp-val-'+p+'-wrap').style.display = 'none';
+      const inp = document.getElementById('mp-val-'+p);
+      if (inp) inp.value = '';
+    });
+    document.getElementById('mp-troco-din').value = '';
+    document.getElementById('mp-obs').value = '';
+    document.getElementById('mp-resumo').style.display = 'none';
+    atualizarPorPessoa();
+  }
+
+  function atualizarPorPessoa() {
+    const total = pedidoAtual?.total || 0;
+    document.getElementById('mp-por-pessoa').textContent = fmt(total / mpPessoas);
+    recalcularMp();
+  }
+
+  function recalcularMp() {
+    const total = pedidoAtual?.total || 0;
+    let recebido = 0;
+    let algum = false;
+    PGTOS_MP.forEach(p => {
+      if (document.getElementById('mp-chk-'+p)?.checked) {
+        algum = true;
+        recebido += parseFloat(document.getElementById('mp-val-'+p)?.value) || 0;
+      }
+    });
+    // Troco dinheiro
+    if (document.getElementById('mp-chk-Dinheiro')?.checked) {
+      const dinVal = parseFloat(document.getElementById('mp-val-Dinheiro')?.value) || 0;
+      const outrasSomas = PGTOS_MP.filter(p=>p!=='Dinheiro')
+        .reduce((a,p) => a + (document.getElementById('mp-chk-'+p)?.checked ? (parseFloat(document.getElementById('mp-val-'+p)?.value)||0) : 0), 0);
+      const dinDevido = Math.max(0, total - outrasSomas);
+      const troco = dinVal - dinDevido;
+      document.getElementById('mp-troco-din').value = dinVal > 0 ? fmt(Math.max(0,troco)) : '';
+      document.getElementById('mp-troco-din').style.color = troco >= 0 ? '#15803d' : '#dc2626';
+    }
+    if (algum) {
+      document.getElementById('mp-resumo').style.display = 'block';
+      document.getElementById('mp-res-total').textContent = fmt(total);
+      document.getElementById('mp-res-recebido').textContent = fmt(recebido);
+      const diff = recebido - total;
+      const el = document.getElementById('mp-res-diff');
+      el.textContent = diff >= 0 ? `Troco: ${fmt(diff)}` : `Falta: ${fmt(Math.abs(diff))}`;
+      el.style.color = diff >= 0 ? '#4ade80' : '#ef4444';
+    } else {
+      document.getElementById('mp-resumo').style.display = 'none';
+    }
+  }
+
   function abrirModal(pedido) {
     pedidoAtual = pedido;
     document.getElementById('mp-num').textContent = '#' + pedido.id.slice(-4).toUpperCase();
@@ -588,40 +704,27 @@
         <div style="color:var(--muted)">${fmt(i.subtotal||i.preco)}</div>
       </div>`;
     }).join('');
-    document.getElementById('mp-obs').value = '';
-    document.getElementById('mp-recebido').value = '';
-    document.getElementById('mp-troco').value = '';
-    document.getElementById('troco-wrap').style.display = 'none';
-    selecionarPgto('PIX');
+    resetarModalPgto();
     document.getElementById('modal-pgto').classList.remove('hidden');
-  }
-
-  function selecionarPgto(tipo) {
-    ['PIX','Cartão','Dinheiro'].forEach(t => {
-      const id = 'mp-' + t.toLowerCase().replace('ã','a');
-      document.getElementById(id)?.classList.toggle('ativo', t === tipo);
-    });
-    document.getElementById('mp-pgto-val').value = tipo;
-    document.getElementById('troco-wrap').style.display = tipo === 'Dinheiro' ? 'block' : 'none';
-    calcularTroco();
-  }
-
-  function calcularTroco() {
-    const recebido = parseFloat(document.getElementById('mp-recebido').value) || 0;
-    const total = pedidoAtual?.total || 0;
-    const troco = recebido - total;
-    document.getElementById('mp-troco').value = troco >= 0 ? fmt(troco) : '—';
-    document.getElementById('mp-troco').style.color = troco >= 0 ? '#15803d' : '#dc2626';
   }
 
   async function finalizarPagamento() {
     if (!pedidoAtual) return;
+    const formas = PGTOS_MP.filter(p => document.getElementById('mp-chk-'+p)?.checked);
+    if (!formas.length) { alert('Selecione ao menos uma forma de pagamento.'); return; }
+    const pagamentos = formas.map(p => ({
+      forma: p,
+      valor: parseFloat(document.getElementById('mp-val-'+p)?.value) || 0
+    }));
+    const pagamentoPrincipal = formas.length === 1 ? formas[0] : 'Misto';
     const btn = document.getElementById('btn-confirmar-pgto');
     btn.textContent = 'Salvando...'; btn.disabled = true;
     try {
       await updateDoc(doc(db,'pedidos',pedidoAtual.id), {
         pago: true,
-        pagamento: document.getElementById('mp-pgto-val').value,
+        pagamento: pagamentoPrincipal,
+        pagamentos,
+        pessoas: mpPessoas,
         pagoEm: serverTimestamp(),
         obsFinanceiro: document.getElementById('mp-obs').value || null,
         status: 'entregue',
@@ -668,7 +771,20 @@
     pedidoAtual = null;
   });
   document.getElementById('btn-confirmar-pgto').addEventListener('click', finalizarPagamento);
-  document.getElementById('mp-recebido').addEventListener('input', calcularTroco);
+  document.getElementById('mp-menos-pessoa').addEventListener('click', () => { mpPessoas = Math.max(1,mpPessoas-1); document.getElementById('mp-pessoas-num').textContent=mpPessoas; atualizarPorPessoa(); });
+  document.getElementById('mp-mais-pessoa').addEventListener('click', () => { mpPessoas++; document.getElementById('mp-pessoas-num').textContent=mpPessoas; atualizarPorPessoa(); });
+
+  document.addEventListener('change', e => {
+    const tipo = e.target.dataset?.mpPgto;
+    if (tipo) {
+      document.getElementById('mp-val-'+tipo+'-wrap').style.display = e.target.checked ? 'block' : 'none';
+      if (!e.target.checked) { const inp = document.getElementById('mp-val-'+tipo); if(inp) inp.value=''; }
+      recalcularMp();
+    }
+  });
+  document.addEventListener('input', e => {
+    if (['mp-val-PIX','mp-val-Cartão','mp-val-Dinheiro'].includes(e.target.id)) recalcularMp();
+  });
 
   document.addEventListener('click', e => {
     // Botão receber pagamento
