@@ -797,12 +797,13 @@
       let contaNum;
 
       if (contaAberta) {
-        // Adiciona itens na conta existente
+        // Acumula TODOS os itens (para o total/caixa)
         const itensAtualizados = [...(contaAberta.itens||[]), ...novosItens];
         const totalAtualizado = itensAtualizados.reduce((a,i) => a + i.subtotal, 0);
         const rodadas = (contaAberta.rodadas||0) + 1;
         await updateDoc(doc(db,'pedidos',contaAberta.id), {
           itens: itensAtualizados,
+          itensPendentes: novosItens, // só os novos para a cozinha ver
           total: totalAtualizado,
           status: 'novo',
           rodadas,
@@ -811,9 +812,10 @@
         });
         contaNum = contaAberta.id.slice(-4).toUpperCase();
       } else {
-        // Cria nova conta para a mesa
+        // Primeira rodada — todos os itens são novos
         const ref = await addDoc(collection(db,'pedidos'), {
           mesa, itens: novosItens, total: totalNovos,
+          itensPendentes: novosItens,
           observacoes: obs,
           pagamento: null, status: 'novo',
           contaMesa: true,

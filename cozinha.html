@@ -259,23 +259,29 @@
       }
       const ordenados = [...grupos[status]].sort((a,b) => (a.criadoEm?.seconds||0) - (b.criadoEm?.seconds||0));
       col.innerHTML = ordenados.map(p => {
-        const itensHtml = (p.itens||[]).map(i => `
+        // Mostra apenas itens pendentes (não entregues ainda)
+        const itensMostrar = p.itensPendentes?.length ? p.itensPendentes : (p.itens||[]);
+        const itensHtml = itensMostrar.map(i => `
           <div class="item-linha">
-            <span class="item-qty">${i.quantidade}x</span>
+            <span class="item-qty">${i.quantidade > 1 ? i.quantidade+'x' : '1x'}</span>
             <span>${i.nome}</span>
           </div>
           ${renderIngredientes(i)}`
         ).join('');
+        // Badge de rodada
+        const rodadaBadge = p.rodadas > 1
+          ? `<span style="background:#7c3aed;color:#fff;font-size:10px;padding:2px 7px;border-radius:8px;font-weight:700;margin-left:6px">🔄 Rodada ${p.rodadas}</span>`
+          : '';
         const obsHtml = p.observacoes ? `<div class="obs">Obs: ${p.observacoes}</div>` : '';
         const acao = status === 'novo'
           ? `<button class="acao-btn iniciar" onclick="window._upStatus('${p.id}','preparo')">Iniciar preparo</button>`
           : status === 'preparo'
           ? `<button class="acao-btn pronto" onclick="window._upStatus('${p.id}','pronto')">Marcar pronto</button>`
-          : `<button class="acao-btn entregue" onclick="window._upStatus('${p.id}','entregue_mesa')">Entregue na mesa ✓</button>`;
+          : `<button class="acao-btn entregue" onclick="window._entregarMesa('${p.id}')">Entregue na mesa ✓</button>`;
         return `<div class="pedido ${status}">
           <div class="pedido-head">
             <div>
-              <div class="p-num ${status}">#${p.id.slice(-4).toUpperCase()}</div>
+              <div class="p-num ${status}">#${p.id.slice(-4).toUpperCase()}${rodadaBadge}</div>
               <div class="p-mesa">Mesa ${p.mesa}</div>
             </div>
             <div style="text-align:right">
@@ -308,6 +314,14 @@
 
   window._upStatus = async (id, status) => {
     await updateDoc(doc(db,'pedidos',id), { status });
+  };
+
+  // Ao entregar na mesa: muda status e limpa itensPendentes
+  window._entregarMesa = async (id) => {
+    await updateDoc(doc(db,'pedidos',id), {
+      status: 'entregue_mesa',
+      itensPendentes: [] // limpa — próxima rodada só mostra itens novos
+    });
   };
 
   // Recarrega receitas a cada 5 min (caso admin atualize o cardápio)
