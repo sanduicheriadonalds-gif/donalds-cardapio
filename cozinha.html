@@ -259,16 +259,42 @@
       }
       const ordenados = [...grupos[status]].sort((a,b) => (a.criadoEm?.seconds||0) - (b.criadoEm?.seconds||0));
       col.innerHTML = ordenados.map(p => {
-        // Mostra apenas itens pendentes (não entregues ainda)
-        const itensMostrar = p.itensPendentes?.length ? p.itensPendentes : (p.itens||[]);
+        // itensPendentes = só o que precisa preparar agora
+        // Se não existe o campo (pedido antigo) E tem rodadas > 1, mostra aviso
+        // Se existe e está vazio, não tem nada para preparar
+        let itensMostrar = [];
+        if (p.itensPendentes !== undefined) {
+          // Novo sistema — usa itensPendentes
+          itensMostrar = p.itensPendentes || [];
+        } else {
+          // Pedido antigo sem o campo — mostra todos os itens
+          itensMostrar = p.itens || [];
+        }
+
+        if (!itensMostrar.length && status !== 'pronto') {
+          // Sem itens pendentes — pedido aguardando nova rodada
+          return `<div class="pedido ${status}" style="opacity:.5">
+            <div class="pedido-head">
+              <div>
+                <div class="p-num ${status}">#${p.id.slice(-4).toUpperCase()}</div>
+                <div class="p-mesa">Mesa ${p.mesa} · conta aberta</div>
+              </div>
+              <div class="p-tempo">${tempo(p.criadoEm)}</div>
+            </div>
+            <div class="pedido-itens" style="color:#555;font-size:12px;font-style:italic">Aguardando próxima rodada...</div>
+            <div class="pedido-foot">
+              <span class="p-total">${fmt(p.total||0)}</span>
+            </div>
+          </div>`;
+        }
+
         const itensHtml = itensMostrar.map(i => `
           <div class="item-linha">
-            <span class="item-qty">${i.quantidade > 1 ? i.quantidade+'x' : '1x'}</span>
+            <span class="item-qty">1x</span>
             <span>${i.nome}</span>
           </div>
           ${renderIngredientes(i)}`
         ).join('');
-        // Badge de rodada
         const rodadaBadge = p.rodadas > 1
           ? `<span style="background:#7c3aed;color:#fff;font-size:10px;padding:2px 7px;border-radius:8px;font-weight:700;margin-left:6px">🔄 Rodada ${p.rodadas}</span>`
           : '';
